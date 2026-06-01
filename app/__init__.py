@@ -16,6 +16,6 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    from . import routes
+    from . import models
 
     return app
