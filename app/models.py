@@ -82,4 +82,4 @@ class Progress(db.Model):
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Progress {self.progress_percentage}% for Topic {self.topic_id}>'
+        return f'<Progress {self.notes_count} notes for Topic {self.topic_id}>'
