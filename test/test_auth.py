@@ -1,4 +1,3 @@
-from flask import session
 
 def register(client, username, password):
     return client.post('/register', data={
@@ -8,27 +7,29 @@ def register(client, username, password):
     }, follow_redirects=True)
 
 def test_register(client):
-    response = client.get('/register', data={
-        'username': 'testuser',
-        'password': 'testpassword',
-        'confirm_password': 'testpassword'
+    response = client.post('/register', data={
+        'email': 'testuser@example.com',
+        'password': 'TestPassword1!',
+        'confirm_password': 'TestPassword1!'
     })
     assert response.status_code == 200
 
 def test_mismatched_passwords(client):
     response = client.post('/register', data={
-        'username': 'testuser2',
-        'password': 'testpassword',
-        'confirm_password': 'wrongpassword'
+        'email': 'testuser2@example.com',
+        'password': 'TestPassword1!',
+        'confirm_password': 'WrongPassword1!'
     }, follow_redirects=True)
-    assert b'Passwords must match' in response.data
+    assert b'Passwords do not match' in response.data
 
-def test_duplicate_username(client):
-    response = client.post('/register', data={
-        'username': 'testuser3',
-        'password': 'testpassword',
-        'confirm_password': 'testpassword'
-    }, follow_redirects=True)
-    assert b'Username already exists' in response.data
+def test_duplicate_email(client):
+    data = {
+        'email': 'testuser@example.com',
+        'password': 'TestPassword1!',
+        'confirm_password': 'TestPassword1!'
+    }
+    client.post('/register', data=data, follow_redirects=True)  # First registration
+    response = client.post('/register', data=data, follow_redirects=True)
+    assert b'Email already registered' in response.data
 
 
