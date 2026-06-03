@@ -12,6 +12,7 @@ def register():
     success = None
     email = None
     password = None
+    confirm_password = None
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -35,7 +36,8 @@ def register():
             db.session.commit()
 
             flash("Registration successful! Please log in.", "success")
-                    
+            return redirect(url_for('auth.register'))
+
         except ValueError as ve:
             flash(str(ve), "danger")
             password = ''  # Clear password field on error
