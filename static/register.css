@@ -568,7 +568,32 @@ a      { color: inherit; text-decoration: none; }
 
 
 /* =============================================================
-   13. FOOTER — copied from home.css
+   13. ALERT / FLASH MESSAGES
+============================================================= */
+.alert {
+  padding:       var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-sm);
+  font-weight:   var(--font-weight-medium);
+  margin-bottom: var(--space-4);
+  border:        1px solid transparent;
+}
+
+.alert--success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color:     var(--color-success);
+  color:            var(--color-success);
+}
+
+.alert--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color:     var(--color-error);
+  color:            var(--color-error);
+}
+
+
+/* =============================================================
+   14. FOOTER — copied from home.css
 ============================================================= */
 .footer {
   background-color: var(--color-surface);

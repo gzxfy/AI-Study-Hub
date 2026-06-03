@@ -8,16 +8,8 @@
       content="Create your free AI StudyHub account and start studying smarter."
     />
     <title>Register – AI StudyHub</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='register.css') }}" />
+    <link rel="stylesheet" href="../static/register.css" />
   </head>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert--{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
 
   <body>
 
@@ -322,6 +314,6 @@
       Script at end of <body> — the DOM is fully loaded before
       JS runs, so no DOMContentLoaded wrapper is needed.
     -->
-    <script src="{{ url_for('static', filename='register.js') }}"></script>
+    <script src="../static/register.js"></script>
   </body>
 </html>
