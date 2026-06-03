@@ -9,7 +9,7 @@ migrate = Migrate()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object(Config)
 
     db.init_app(app)
@@ -19,5 +19,9 @@ def create_app():
     from . import models
     from .auth import auth_bp
     app.register_blueprint(auth_bp)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return models.User.query.get(int(user_id))
 
     return app

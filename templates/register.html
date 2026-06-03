@@ -8,8 +8,16 @@
       content="Create your free AI StudyHub account and start studying smarter."
     />
     <title>Register – AI StudyHub</title>
-    <link rel="stylesheet" href="register.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='register.css') }}" />
   </head>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert--{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
   <body>
 
@@ -46,6 +54,20 @@
     <main class="register-page">
       <div class="register-card">
 
+        <!-- Flash messages — rendered by Flask's flash() system.
+             The route calls flash(message, category) and this block
+             displays them. Without this, flash messages are silently
+             discarded and never appear in the response HTML. -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert--{{ category }}" role="alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         <!-- Card header -->
         <div class="register-card__header">
           <h1 class="register-card__title" id="register-heading">
@@ -69,7 +91,7 @@
         <form
           class="register-form"
           id="registerForm"
-          action="#"
+          action="{{ url_for('auth.register') }}"
           method="POST"
           novalidate
           aria-labelledby="register-heading"
@@ -90,10 +112,7 @@
             <!--
               Error span — empty by default.
               JS fills this on submit if the field is blank.
-              Flask can also render an error here:
-                {% if form.username.errors %}
-                  <span class="form-error">{{ form.username.errors[0] }}</span>
-                {% endif %}
+              Flask can also render an error here using flashed messages.
             -->
             <span
               class="form-error"
@@ -233,7 +252,7 @@
                 class="form-input"
                 type="password"
                 id="confirmPassword"
-                name="confirmPassword"
+                name="confirm_password"
                 placeholder="Repeat your password"
                 autocomplete="new-password"
                 required
@@ -303,7 +322,6 @@
       Script at end of <body> — the DOM is fully loaded before
       JS runs, so no DOMContentLoaded wrapper is needed.
     -->
-    <script src="register.js"></script>
-
+    <script src="{{ url_for('static', filename='register.js') }}"></script>
   </body>
 </html>
