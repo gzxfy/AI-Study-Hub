@@ -42,9 +42,11 @@ def register():
             flash(str(ve), "danger")
             password = ''  # Clear password field on error
             confirm_password = ''  # Clear confirm password field on error
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            flash(f"An error occurred: {e}", "danger")
+            from flask import current_app
+            current_app.logger.exception('Registration failed with an unexpected error')
+            flash('An unexpected error occurred. Please try again later.', 'danger')
             password = ''  # Clear password field on error
             confirm_password = ''  # Clear confirm password field on error
             email = ''  # Clear email field on error
