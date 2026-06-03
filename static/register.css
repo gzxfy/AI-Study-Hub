@@ -1,0 +1,722 @@
+/* =============================================================
+   register.css — AI StudyHub Register Page Styles
+   =============================================================
+
+   TABLE OF CONTENTS
+   -----------------
+   1.  CSS Custom Properties (:root)
+   2.  Reset & Base
+   3.  Button styles (.btn variants)
+   4.  Navbar
+   5.  Register page layout (.register-page)
+   6.  Register card (.register-card)
+   7.  Form elements (.form-group, .form-label, .form-input)
+   8.  Input wrapper + toggle button
+   9.  Inline error messages (.form-error)
+   10. Password rules block (.password-rules)
+   11. Individual rule rows (.rule, .rule--pass, .rule--fail)
+   12. Password strength meter
+   13. Footer
+   14. Media Queries (mobile)
+
+   NOTE ON DUPLICATION:
+   Sections 1–4 and 13 are intentionally copied from home.css
+   so this file is self-contained and works without home.css.
+   When you add more pages, extract sections 1–4 into a shared
+   base.css and @import it from each page's CSS file.
+============================================================= */
+
+
+/* =============================================================
+   1. CSS CUSTOM PROPERTIES
+   Copied from home.css, with two additions:
+     --color-success  — green for passing rules
+     --color-error    — red for failing rules / field errors
+============================================================= */
+:root {
+
+  /* --- Color Palette --- */
+  --color-bg:           #0F172A;
+  --color-surface:      #1E293B;
+  --color-surface-hover:#263347;
+  --color-border:       #334155;
+
+  --color-primary:      #4F46E5;
+  --color-primary-dark: #4338CA;
+  --color-secondary:    #7C3AED;
+
+  --color-text:         #F8FAFC;
+  --color-text-muted:   #94A3B8;
+  --color-white:        #FFFFFF;
+
+  /* New for register page — used by JS validation feedback */
+  --color-success:      #10B981;   /* green ✓ passing rule           */
+  --color-error:        #EF4444;   /* red   ✗ failing rule / error   */
+  --color-warning:      #F59E0B;   /* orange — "Fair" strength       */
+  --color-good:         #EAB308;   /* yellow — "Good" strength       */
+
+  /* --- Spacing Scale --- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  96px;
+
+  /* --- Typography --- */
+  --font-family:          'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-sm:         0.875rem;
+  --font-size-base:       1rem;
+  --font-size-md:         1.125rem;
+  --font-size-lg:         1.25rem;
+  --font-size-xl:         1.5rem;
+  --font-size-2xl:        2rem;
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:  1.2;
+  --line-height-normal: 1.6;
+
+  /* --- Layout --- */
+  --container-max:  1100px;
+  --navbar-height:  68px;
+
+  /* --- Borders & Radius --- */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-pill: 999px;
+
+  /* --- Shadows --- */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --shadow-btn:  0 2px 12px rgba(79, 70, 229, 0.4);
+
+  /* --- Transitions --- */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+}
+
+
+/* =============================================================
+   2. RESET & BASE
+============================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family:      var(--font-family);
+  font-size:        var(--font-size-base);
+  font-weight:      var(--font-weight-normal);
+  line-height:      var(--line-height-normal);
+  color:            var(--color-text);
+  /*
+    Page background is --color-surface (lighter than home's navy).
+    The card uses --color-bg (darker navy), creating contrast so
+    the form card visually "pops" off the page.
+  */
+  background-color: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+ul, ol { list-style: none; }
+img    { max-width: 100%; display: block; }
+a      { color: inherit; text-decoration: none; }
+
+
+/* =============================================================
+   3. BUTTON STYLES — copied from home.css
+   Reusable across all pages. .btn--block is new here.
+============================================================= */
+.btn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-2);
+  padding:         10px var(--space-5);
+  border:          2px solid transparent;
+  border-radius:   var(--radius-pill);
+  font-family:     var(--font-family);
+  font-size:       var(--font-size-base);
+  font-weight:     var(--font-weight-semibold);
+  line-height:     1;
+  cursor:          pointer;
+  white-space:     nowrap;
+  transition:      background-color var(--transition-fast),
+                   border-color     var(--transition-fast),
+                   color            var(--transition-fast),
+                   box-shadow       var(--transition-fast),
+                   transform        var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn:hover  { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+/* Primary */
+.btn--primary {
+  background-color: var(--color-primary);
+  border-color:     var(--color-primary);
+  color:            var(--color-white);
+  box-shadow:       var(--shadow-btn);
+}
+.btn--primary:hover {
+  background-color: var(--color-primary-dark);
+  border-color:     var(--color-primary-dark);
+}
+
+/* Ghost — navbar links */
+.btn--ghost {
+  background-color: transparent;
+  border-color:     transparent;
+  color:            var(--color-text-muted);
+  padding-left:     var(--space-4);
+  padding-right:    var(--space-4);
+}
+.btn--ghost:hover {
+  color:            var(--color-text);
+  background-color: rgba(248, 250, 252, 0.06);
+}
+
+/*
+  Block — full width, used for the form submit button.
+  Overrides the inline-flex width so it stretches to the
+  container's full width.
+*/
+.btn--block {
+  width:         100%;
+  justify-content: center;
+  padding-top:   14px;
+  padding-bottom: 14px;
+  font-size:     var(--font-size-md);
+}
+
+
+/* =============================================================
+   4. NAVBAR — copied from home.css
+============================================================= */
+.navbar {
+  position:         sticky;
+  top:              0;
+  z-index:          100;
+  width:            100%;
+  height:           var(--navbar-height);
+  background-color: var(--color-surface);
+  border-bottom:    1px solid var(--color-border);
+}
+
+.navbar__container {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  max-width:       var(--container-max);
+  height:          100%;
+  margin:          0 auto;
+  padding:         0 var(--space-5);
+}
+
+.navbar__logo {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-2);
+  font-size:       var(--font-size-lg);
+  font-weight:     var(--font-weight-bold);
+  color:           var(--color-text);
+  text-decoration: none;
+  transition:      opacity var(--transition-fast);
+}
+.navbar__logo:hover { opacity: 0.85; }
+
+.navbar__logo-icon {
+  font-size:   1.4rem;
+  line-height: 1;
+}
+
+.navbar__actions {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+}
+
+
+/* =============================================================
+   5. REGISTER PAGE LAYOUT
+   Fills the remaining viewport height below the navbar.
+   Uses flexbox to vertically and horizontally center the card.
+   The page padding-top/bottom gives breathing room on tall
+   screens and lets content scroll naturally on short ones.
+============================================================= */
+.register-page {
+  min-height: calc(100vh - var(--navbar-height));
+  display:    flex;
+  align-items: flex-start;       /* top-align so tall forms don't clip */
+  justify-content: center;
+  padding:    var(--space-8) var(--space-5);
+}
+
+
+/* =============================================================
+   6. REGISTER CARD
+   The centered white-ish card that holds the entire form.
+   Uses --color-bg (darker navy) as background, which contrasts
+   against the --color-surface page background.
+============================================================= */
+.register-card {
+  width:            100%;
+  max-width:        480px;
+  background-color: var(--color-bg);
+  border:           1px solid var(--color-border);
+  border-radius:    var(--radius-lg);
+  padding:          var(--space-7) var(--space-6);
+  box-shadow:       var(--shadow-card);
+}
+
+.register-card__header {
+  margin-bottom: var(--space-6);
+  text-align:    center;
+}
+
+.register-card__title {
+  font-size:   var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color:       var(--color-text);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-2);
+}
+
+.register-card__subtitle {
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-muted);
+}
+
+.register-card__link {
+  color:      var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+.register-card__link:hover {
+  color: var(--color-secondary);
+}
+
+
+/* =============================================================
+   7. FORM ELEMENTS
+   .form-group  — wraps label + input + error, stacked vertically
+   .form-label  — styled label above the input
+   .form-input  — styled text/email/password input
+   .register-form — adds consistent vertical spacing between groups
+============================================================= */
+.register-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-5);   /* vertical spacing between field groups */
+}
+
+.form-group {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);   /* spacing between label, input, error */
+}
+
+.form-label {
+  font-size:   var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color:       var(--color-text);
+  cursor:      pointer;  /* clicking label focuses the input via `for` attr */
+}
+
+.form-input {
+  width:            100%;
+  padding:          12px var(--space-4);
+  background-color: var(--color-surface);
+  border:           1px solid var(--color-border);
+  border-radius:    var(--radius-md);
+  color:            var(--color-text);
+  font-family:      var(--font-family);
+  font-size:        var(--font-size-base);
+  line-height:      var(--line-height-normal);
+  transition:       border-color var(--transition-fast),
+                    box-shadow   var(--transition-fast);
+  outline:          none;   /* we replace the default outline with box-shadow */
+}
+
+/* Placeholder text style */
+.form-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* Focus state — indigo ring replaces the default browser outline */
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow:   0 0 0 3px rgba(79, 70, 229, 0.25);
+}
+
+/* Invalid state — triggered by JS adding .is-invalid class */
+.form-input.is-invalid {
+  border-color: var(--color-error);
+  box-shadow:   0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+
+/* =============================================================
+   8. INPUT WRAPPER + TOGGLE BUTTON
+   .input-wrapper uses position:relative so the absolute-
+   positioned toggle button sits inside the right edge of the
+   input without affecting surrounding layout flow.
+============================================================= */
+.input-wrapper {
+  position: relative;
+  display:  flex;
+  align-items: center;
+}
+
+/* The input inside a wrapper gets right padding to prevent
+   text from running underneath the toggle button */
+.input-wrapper .form-input {
+  padding-right: 48px;
+}
+
+.input-toggle {
+  position:         absolute;
+  right:            12px;
+  top:              50%;
+  transform:        translateY(-50%);
+  background:       none;
+  border:           none;
+  cursor:           pointer;
+  font-size:        1rem;
+  color:            var(--color-text-muted);
+  padding:          var(--space-1);
+  border-radius:    var(--radius-sm);
+  line-height:      1;
+  transition:       color       var(--transition-fast),
+                    background-color var(--transition-fast);
+  /* Prevent the button from submitting the form */
+  /* type="button" is set in HTML but this is a safety net */
+}
+
+.input-toggle:hover {
+  color:            var(--color-text);
+  background-color: rgba(248, 250, 252, 0.08);
+}
+
+/* When toggled on (aria-pressed="true"), highlight the icon */
+.input-toggle[aria-pressed="true"] {
+  color: var(--color-primary);
+}
+
+
+/* =============================================================
+   9. INLINE ERROR MESSAGES
+   Hidden by default (empty content = zero height).
+   JS fills textContent to make them visible.
+   Flask can also set content via Jinja2 template rendering.
+============================================================= */
+.form-error {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-error);
+  font-weight: var(--font-weight-medium);
+  min-height:  1.2em;   /* reserves space so layout doesn't shift */
+  line-height: 1.2;
+}
+
+/* Hide visually when empty — avoids blank space on load */
+.form-error:empty {
+  display: none;
+}
+
+
+/* =============================================================
+   10. PASSWORD RULES BLOCK
+   Appears inline between the password input and confirm
+   password input. Has a subtle top border for visual separation.
+============================================================= */
+.password-rules {
+  padding:       var(--space-4) var(--space-5);
+  background-color: var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-4);
+  /* Negative top margin pulls it slightly closer to the
+     password input above it, since .register-form uses gap */
+  margin-top:    calc(-1 * var(--space-3));
+}
+
+
+/* =============================================================
+   11. RULE ROWS
+   Each <li> is a flex row: icon on the left, text on the right.
+   Two state modifier classes control the color:
+     .rule--fail  → red ✗  (set in HTML, default state)
+     .rule--pass  → green ✓ (set by JS when check passes)
+   No state = neutral (shows a dot), which we don't use here
+   since all start as fail per the user's preference.
+============================================================= */
+.rules-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.rule {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+  font-size:   var(--font-size-sm);
+  line-height: 1.4;
+  transition:  color var(--transition-base);
+}
+
+/* The icon span — JS does NOT touch this directly;
+   the ::before pseudo-element reads content from CSS based
+   on the class on the parent <li> */
+.rule__icon {
+  font-style:  normal;
+  font-size:   0.85rem;
+  font-weight: var(--font-weight-bold);
+  width:       16px;
+  flex-shrink: 0;
+  text-align:  center;
+}
+
+.rule__text {
+  color: var(--color-text-muted);
+  transition: color var(--transition-base);
+}
+
+/* --- FAIL state (default / red ✗) --- */
+.rule--fail .rule__icon::before {
+  content: "✗";
+  color:   var(--color-error);
+}
+.rule--fail .rule__text {
+  color: var(--color-error);
+}
+
+/* --- PASS state (green ✓) --- */
+.rule--pass .rule__icon::before {
+  content: "✓";
+  color:   var(--color-success);
+}
+.rule--pass .rule__text {
+  color: var(--color-success);
+}
+
+
+/* =============================================================
+   12. PASSWORD STRENGTH METER
+   A horizontal progress-bar style track with a colored fill.
+   JS sets the fill width as a percentage and adds a modifier
+   class to the fill element to control its color:
+     .strength--weak    → red
+     .strength--fair    → orange
+     .strength--good    → yellow
+     .strength--strong  → green
+
+   The label text below is also updated by JS.
+============================================================= */
+.strength-meter {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.strength-meter__track {
+  width:            100%;
+  height:           6px;
+  background-color: var(--color-border);
+  border-radius:    var(--radius-pill);
+  overflow:         hidden;   /* clips the fill to rounded corners */
+}
+
+.strength-meter__fill {
+  height:           100%;
+  width:            0%;        /* JS sets this: e.g. style.width = '66%' */
+  border-radius:    var(--radius-pill);
+  transition:       width            var(--transition-base),
+                    background-color var(--transition-base);
+}
+
+/* Fill colors — added as classes by JS */
+.strength-meter__fill.strength--weak   { background-color: var(--color-error);   }
+.strength-meter__fill.strength--fair   { background-color: var(--color-warning);  }
+.strength-meter__fill.strength--good   { background-color: var(--color-good);     }
+.strength-meter__fill.strength--strong { background-color: var(--color-success);  }
+
+.strength-meter__label {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+
+/* =============================================================
+   13. ALERT / FLASH MESSAGES
+============================================================= */
+.alert {
+  padding:       var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size:     var(--font-size-sm);
+  font-weight:   var(--font-weight-medium);
+  margin-bottom: var(--space-4);
+  border:        1px solid transparent;
+}
+
+.alert--success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color:     var(--color-success);
+  color:            var(--color-success);
+}
+
+.alert--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color:     var(--color-error);
+  color:            var(--color-error);
+}
+
+
+/* =============================================================
+   14. FOOTER — copied from home.css
+============================================================= */
+.footer {
+  background-color: var(--color-surface);
+  border-top:       1px solid var(--color-border);
+  padding:          var(--space-7) var(--space-5);
+}
+
+.footer__container {
+  max-width:       var(--container-max);
+  margin:          0 auto;
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  gap:             var(--space-6);
+  flex-wrap:       wrap;
+}
+
+.footer__brand {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.footer__logo-icon { font-size: 1.5rem; }
+
+.footer__logo-text {
+  font-size:   var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color:       var(--color-text);
+}
+
+.footer__tagline {
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-muted);
+}
+
+.footer__nav {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);
+  padding-top:    var(--space-1);
+}
+
+.footer__link {
+  font-size:  var(--font-size-sm);
+  color:      var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+.footer__link:hover { color: var(--color-text); }
+
+.footer__credits {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+  text-align:     right;
+}
+
+.footer__tech-note {
+  font-size:   var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color:       var(--color-primary);
+}
+
+.footer__copyright {
+  font-size: var(--font-size-sm);
+  color:     var(--color-text-muted);
+}
+
+
+/* =============================================================
+   14. MEDIA QUERIES
+============================================================= */
+
+/* ---- Tablet (≤768px) ---- */
+@media (max-width: 768px) {
+
+  .register-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .register-card {
+    padding: var(--space-6) var(--space-5);
+  }
+
+  /* Footer collapses to stacked column */
+  .footer__container {
+    flex-direction: column;
+    align-items:    center;
+    text-align:     center;
+  }
+  .footer__brand   { align-items: center; }
+  .footer__nav     { flex-direction: row; justify-content: center; gap: var(--space-5); }
+  .footer__credits { text-align: center; }
+}
+
+/* ---- Small phone (≤480px) ---- */
+@media (max-width: 480px) {
+
+  .register-page {
+    padding: var(--space-5) var(--space-3);
+    /* On very small screens, remove the side gap entirely */
+    align-items: stretch;
+  }
+
+  .register-card {
+    padding:       var(--space-5) var(--space-4);
+    border-radius: var(--radius-md);
+    /* Remove the card border on tiny screens — it feels cramped */
+    border-left:   none;
+    border-right:  none;
+    border-radius: 0;
+  }
+
+  .register-card__title {
+    font-size: var(--font-size-xl);
+  }
+
+  /* Navbar: hide Log In ghost text on very narrow screens */
+  .btn--ghost {
+    display: none;
+  }
+
+  .navbar__container {
+    padding: 0 var(--space-4);
+  }
+}
