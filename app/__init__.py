@@ -16,7 +16,7 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    from . import auth_bp
+    from . import models
     from .auth import auth_bp
     app.register_blueprint(auth_bp)
 

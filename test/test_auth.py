@@ -1,21 +1,16 @@
 
-def register(client, username, password):
-    return client.post('/register', data={
-        'username': username,
-        'password': password,
-        'confirm_password': password
-    }, follow_redirects=True)
-
 def test_register(client):
     response = client.post('/register', data={
+        'username': 'testuser',
         'email': 'testuser@example.com',
         'password': 'TestPassword1!',
         'confirm_password': 'TestPassword1!'
-    })
+    }, follow_redirects=True)
     assert response.status_code == 200
 
 def test_mismatched_passwords(client):
     response = client.post('/register', data={
+        'username': 'testuser2',
         'email': 'testuser2@example.com',
         'password': 'TestPassword1!',
         'confirm_password': 'WrongPassword1!'
@@ -24,6 +19,7 @@ def test_mismatched_passwords(client):
 
 def test_duplicate_email(client):
     data = {
+        'username': 'testuser',
         'email': 'testuser@example.com',
         'password': 'TestPassword1!',
         'confirm_password': 'TestPassword1!'

@@ -35,8 +35,7 @@ def register():
             db.session.commit()
 
             flash("Registration successful! Please log in.", "success")
-            return redirect(url_for('auth.login'))
-        
+                    
         except ValueError as ve:
             flash(str(ve), "danger")
             password = ''  # Clear password field on error
