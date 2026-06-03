@@ -31,8 +31,8 @@ def validate_email_and_password(email, password):
 
 # Will most likely be changed to use a more robust validation library in the future, and for better error handling and user feedback, but this is a simple validation function for now.
 def validate_item_data(title, description, price, url):
-    if not title or not description or not price or not url:
-        raise ValueError("Title, description, price, and a picture are required.")
+    if not title or not description or price in (None, '') or not url:
+        raise ValueError("Title, description, price, and picture URL are required.")
     try:
         price_float = float(price)
     except (ValueError, TypeError):
