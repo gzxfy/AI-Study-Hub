@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Create your free AI StudyHub account and start studying smarter."
+    />
+    <title>Register – AI StudyHub</title>
+    <link rel="stylesheet" href="../static/register.css" />
+  </head>
+
+  <body>
+
+    <!-- =========================================================
+         NAVBAR
+         Same structure as home.html. The "Register" button is
+         intentionally removed here — the user is already on the
+         register page, so it would be a dead link. We keep only
+         "Log In" for users who arrived by mistake.
+
+         FUTURE FLASK NOTE:
+         When you add Jinja2 template inheritance, this nav will
+         live in templates/base.html and every page extends it.
+         You will only write this HTML once.
+    ========================================================= -->
+    <nav class="navbar">
+      <div class="navbar__container">
+        <a href="home.html" class="navbar__logo" aria-label="AI StudyHub home">
+          <span class="navbar__logo-icon" aria-hidden="true">🧠</span>
+          <span class="navbar__logo-text">AI StudyHub</span>
+        </a>
+        <div class="navbar__actions">
+          <a href="login.html" class="btn btn--ghost">Log In</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- =========================================================
+         MAIN — single centered card layout
+         The page background is --color-surface (slightly lighter
+         than the home page navy) so the card, which uses the
+         darker --color-bg, stands out clearly.
+    ========================================================= -->
+    <main class="register-page">
+      <div class="register-card">
+
+        <!-- Flash messages — rendered by Flask's flash() system.
+             The route calls flash(message, category) and this block
+             displays them. Without this, flash messages are silently
+             discarded and never appear in the response HTML. -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert--{{ category }}" role="alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Card header -->
+        <div class="register-card__header">
+          <h1 class="register-card__title" id="register-heading">
+            Create your account
+          </h1>
+          <p class="register-card__subtitle">
+            Already have an account?
+            <a href="login.html" class="register-card__link">Log in here</a>
+          </p>
+        </div>
+
+        <!-- ==================================================
+             REGISTRATION FORM
+             action="#"   → placeholder; change to your Flask
+                            route: action="/register"
+             method="POST" → correct HTTP verb for form submit
+             novalidate   → disables browser built-in popups;
+                            our custom JS handles validation
+                            so UX is consistent across browsers
+        =================================================== -->
+        <form
+          class="register-form"
+          id="registerForm"
+          action="{{ url_for('auth.register') }}"
+          method="POST"
+          novalidate
+          aria-labelledby="register-heading"
+        >
+
+          <!-- ---- USERNAME ---- -->
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input
+              class="form-input"
+              type="text"
+              id="username"
+              name="username"
+              placeholder="e.g. studymaster99"
+              autocomplete="username"
+              required
+            />
+            <!--
+              Error span — empty by default.
+              JS fills this on submit if the field is blank.
+              Flask can also render an error here using flashed messages.
+            -->
+            <span
+              class="form-error"
+              id="error-username"
+              role="alert"
+              aria-live="polite"
+            ></span>
+          </div>
+
+          <!-- ---- EMAIL ---- -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <input
+              class="form-input"
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+            />
+            <span
+              class="form-error"
+              id="error-email"
+              role="alert"
+              aria-live="polite"
+            ></span>
+          </div>
+
+          <!-- ---- PASSWORD ---- -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <!--
+              .input-wrapper wraps the <input> and the 👁 toggle
+              button together. The button is positioned absolutely
+              inside this relative container so it sits on the
+              right edge of the input without affecting layout.
+            -->
+            <div class="input-wrapper">
+              <input
+                class="form-input"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Create a strong password"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="input-toggle"
+                id="togglePassword"
+                aria-label="Show password"
+                aria-pressed="false"
+                title="Toggle password visibility"
+              >
+                👁
+              </button>
+            </div>
+            <span
+              class="form-error"
+              id="error-password"
+              role="alert"
+              aria-live="polite"
+            ></span>
+          </div>
+
+          <!-- ====================================================
+               PASSWORD REQUIREMENTS
+               These rules are shown inline, directly below the
+               password input. All six start with class
+               "rule--fail" (red ✗) on page load.
+               register.js flips them to "rule--pass" (green ✓)
+               in real time as the user types.
+
+               WHY INLINE INSTEAD OF A SIDEBAR?
+               Keeps the layout simple (one column). The user
+               can see exactly which rule they're satisfying
+               without their eyes jumping to a separate panel.
+          =================================================== -->
+          <div class="password-rules" aria-label="Password requirements">
+
+            <ul class="rules-list" role="list">
+
+              <li class="rule rule--fail" id="rule-length">
+                <!-- JS swaps this icon between ✗ and ✓ -->
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">At least 8 characters</span>
+              </li>
+
+              <li class="rule rule--fail" id="rule-upper">
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">One uppercase letter (A–Z)</span>
+              </li>
+
+              <li class="rule rule--fail" id="rule-lower">
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">One lowercase letter (a–z)</span>
+              </li>
+
+              <li class="rule rule--fail" id="rule-number">
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">One number (0–9)</span>
+              </li>
+
+              <li class="rule rule--fail" id="rule-special">
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">One special character (!@#$%^&amp;*)</span>
+              </li>
+
+              <li class="rule rule--fail" id="rule-match">
+                <span class="rule__icon" aria-hidden="true"></span>
+                <span class="rule__text">Passwords match</span>
+              </li>
+
+            </ul>
+
+            <!-- Strength bar — width and color updated by JS -->
+            <div class="strength-meter" aria-label="Password strength indicator">
+              <div class="strength-meter__track">
+                <div class="strength-meter__fill" id="strengthFill"></div>
+              </div>
+              <span class="strength-meter__label" id="strengthLabel">
+                Enter a password to see strength
+              </span>
+            </div>
+
+          </div><!-- /.password-rules -->
+
+          <!-- ---- CONFIRM PASSWORD ---- -->
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">
+              Confirm password
+            </label>
+            <div class="input-wrapper">
+              <input
+                class="form-input"
+                type="password"
+                id="confirmPassword"
+                name="confirm_password"
+                placeholder="Repeat your password"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="input-toggle"
+                id="toggleConfirm"
+                aria-label="Show confirm password"
+                aria-pressed="false"
+                title="Toggle password visibility"
+              >
+                👁
+              </button>
+            </div>
+            <span
+              class="form-error"
+              id="error-confirm"
+              role="alert"
+              aria-live="polite"
+            ></span>
+          </div>
+
+          <!-- Submit button -->
+          <!--
+            .btn--block makes this full-width inside the card.
+            Defined in register.css.
+          -->
+          <button type="submit" class="btn btn--primary btn--block">
+            Create Account
+          </button>
+
+        </form><!-- /#registerForm -->
+
+      </div><!-- /.register-card -->
+    </main>
+
+    <!-- =========================================================
+         FOOTER — identical to home.html
+    ========================================================= -->
+    <footer class="footer">
+      <div class="footer__container">
+
+        <div class="footer__brand">
+          <span class="footer__logo-icon" aria-hidden="true">🧠</span>
+          <span class="footer__logo-text">AI StudyHub</span>
+          <p class="footer__tagline">Study smarter, not harder.</p>
+        </div>
+
+        <nav class="footer__nav" aria-label="Footer navigation">
+          <a href="home.html" class="footer__link">Home</a>
+          <a href="login.html" class="footer__link">Log In</a>
+          <a href="{{ url_for('auth.register') }}" class="footer__link">Register</a>
+        </nav>
+
+        <div class="footer__credits">
+          <p class="footer__tech-note">Built with Flask &amp; Python</p>
+          <p class="footer__copyright">
+            &copy; 2026 AI StudyHub. Portfolio project.
+          </p>
+        </div>
+
+      </div>
+    </footer>
+
+    <!--
+      Script at end of <body> — the DOM is fully loaded before
+      JS runs, so no DOMContentLoaded wrapper is needed.
+    -->
+    <script src="../static/register.js"></script>
+  </body>
+</html>
