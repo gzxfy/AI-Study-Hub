@@ -14,21 +14,25 @@ def register():
     password = None
     confirm_password = None
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        username = (request.form.get('username') or '').strip()
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password') or ''
+        confirm_password = request.form.get('confirm_password') or ''
 
         try:
-            # validate input 
+            if not username:
+                raise ValueError('Username is required.')
+
+            # validate input
             validation_helpers.validate_email_and_password(email, password)
             if password != confirm_password:
-                raise ValueError("Passwords do not match.")
-            
-            existing_user = User.query.filter_by(email=email).first()
-            if existing_user:
-                raise ValueError("Email already registered. Please use a different email or log in.")
-            
+                raise ValueError('Passwords do not match.')
+
+            if User.query.filter_by(email=email).first():
+                raise ValueError('Email already registered. Please use a different email or log in.')
+            if User.query.filter_by(username=username).first():
+                raise ValueError('Username already taken. Please choose a different username.')
+
             password_hash = generate_password_hash(password)
             new_user = User(username=username, email=email, password_hash=password_hash)
 
