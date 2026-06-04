@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, request, session, url_for, flash, current_app
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from .models import User, db
 import validation_helpers
 
@@ -40,7 +40,7 @@ def register():
             db.session.commit()
 
             flash("Registration successful! Please log in.", "success")
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('auth.login'))
 
         except ValueError as ve:
             flash(str(ve), "danger")
@@ -69,17 +69,19 @@ def login():
         try:
             if not email:
                 raise ValueError('Email is required.')
+            if not password:
+                raise ValueError('Password is required.')
 
             validation_helpers.validate_email_and_password(email, password)
 
             user = User.query.filter_by(email=email).first()
-            if not user or not user.check_password(password):
+            if not user or not check_password_hash(user.password_hash, password):
                 raise ValueError('Invalid email or password.')
             
             session['user_id'] = user.id
             session['username'] = user.username
             flash("Login successful! Welcome back.", "success")
-            return redirect(url_for('main.index'))
+            return redirect(url_for('main.home'))
 
         except ValueError as ve:
             flash(str(ve), "danger")
