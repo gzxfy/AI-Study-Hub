@@ -93,6 +93,8 @@
           novalidate
           aria-labelledby="register-heading"
         >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
 
           <!-- ---- USERNAME ---- -->
           <div class="form-group">
