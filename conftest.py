@@ -5,7 +5,8 @@ from app import create_app, db
 def test_app():
     app = create_app({
         'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:'
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'WTF_CSRF_ENABLED': False
     })
     
     with app.app_context():

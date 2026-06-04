@@ -1,4 +1,11 @@
 
+# =====REGISTER TESTS=====
+def test_register_form_includes_csrf_token(client):
+    response = client.get('/register')
+    assert response.status_code == 200
+    assert b'name="csrf_token"' in response.data
+
+
 def test_register(client):
     response = client.post('/register', data={
         'username': 'testuser',
@@ -28,4 +35,60 @@ def test_duplicate_email(client):
     response = client.post('/register', data=data, follow_redirects=True)
     assert b'Email already registered' in response.data
 
+# =====LOGIN TESTS=====
+def test_login_form_includes_csrf_token(client):
+    response = client.get('/login')
+    assert response.status_code == 200
+    assert b'name="csrf_token"' in response.data
 
+
+def test_login(client):
+    # First, register a user to log in with
+    client.post('/register', data={
+        'username': 'loginuser',
+        'email': 'loginuser@example.com',
+        'password': 'TestPassword1!',
+        'confirm_password': 'TestPassword1!'
+    }, follow_redirects=True)
+
+    response = client.post('/login', data={
+        'email': 'loginuser@example.com',
+        'password': 'TestPassword1!'
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Login successful! Welcome back.' in response.data
+
+def test_invalid_login(client):
+    client.post('/register', data={
+        'username': 'testuser',
+        'email': 'loginuser@example.com',
+        'password': 'TestPassword1!',
+        'confirm_password': 'TestPassword1!'
+    }, follow_redirects=True)
+
+    response = client.post('/login', data={
+        'email': 'testuser@example.com',
+        'password': 'WrongPassword1!'
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Invalid email or password.' in response.data
+
+def test_empty_email_login(client):
+    response = client.post('/login', data={
+        'email': '',
+        'password': 'TestPassword1!'
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Email is required.' in response.data
+
+def test_empty_password_login(client):
+    response = client.post('/login', data={
+        'email': 'testuser@example.com',
+        'password': ''
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Password is required.' in response.data
