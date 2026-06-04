@@ -21,7 +21,9 @@ def create_app(test_config=None):
 
     from . import models
     from .auth import auth_bp
+    from .main import main_bp
     app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
 
     @login_manager.user_loader
     def load_user(user_id):
