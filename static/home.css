@@ -48,6 +48,8 @@
   --color-primary:      #4F46E5;   /* indigo — main brand color      */
   --color-primary-dark: #4338CA;   /* darker shade for hover states  */
   --color-secondary:    #7C3AED;   /* purple — gradient end          */
+  --color-success:      #10B981;   /* green success messages         */
+  --color-error:        #EF4444;   /* red error messages             */
 
   --color-text:         #F8FAFC;   /* primary readable text          */
   --color-text-muted:   #94A3B8;   /* secondary / placeholder text   */
@@ -308,6 +310,49 @@ a {
   display:  flex;
   align-items: center;
   gap:      var(--space-2);
+}
+
+.navbar__user {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background-color: rgba(79, 70, 229, 0.15);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.flash-stack {
+  max-width: var(--container-max);
+  margin: var(--space-5) auto 0;
+  padding: 0 var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.alert--success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.alert--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 
