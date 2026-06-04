@@ -93,3 +93,11 @@ def login():
             email = ''  # Clear email field on error
     return render_template('login.html', email=email, password=password, error=error, success=success)
 
+
+@auth_bp.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('main.home'))
+
