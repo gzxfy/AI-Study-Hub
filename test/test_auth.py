@@ -1,4 +1,5 @@
 
+# =====REGISTER TESTS=====
 def test_register(client):
     response = client.post('/register', data={
         'username': 'testuser',
@@ -27,5 +28,3 @@ def test_duplicate_email(client):
     client.post('/register', data=data, follow_redirects=True)  # First registration
     response = client.post('/register', data=data, follow_redirects=True)
     assert b'Email already registered' in response.data
-
-
