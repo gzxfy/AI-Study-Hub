@@ -81,6 +81,7 @@ def login():
             session.clear()
             session['user_id'] = user.id
             session['username'] = user.username
+            flash('Login successful! Welcome back.', 'success')
             return redirect(url_for('main.home'))
 
         except ValueError as ve:
@@ -100,4 +101,3 @@ def logout():
     session.pop('username', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('main.home'))
-
