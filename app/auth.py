@@ -78,9 +78,9 @@ def login():
             if not user or not check_password_hash(user.password_hash, password):
                 raise ValueError('Invalid email or password.')
             
+            session.clear()
             session['user_id'] = user.id
             session['username'] = user.username
-            flash("Login successful! Welcome back.", "success")
             return redirect(url_for('main.home'))
 
         except ValueError as ve:
