@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, request, url_for, flash
+from flask import Blueprint, render_template, redirect, request, session, url_for, flash, current_app
 from werkzeug.security import generate_password_hash
 from .models import User, db
 import validation_helpers
@@ -48,10 +48,46 @@ def register():
             confirm_password = ''  # Clear confirm password field on error
         except Exception:
             db.session.rollback()
-            from flask import current_app
             current_app.logger.exception('Registration failed with an unexpected error')
             flash('An unexpected error occurred. Please try again later.', 'danger')
             password = ''  # Clear password field on error
             confirm_password = ''  # Clear confirm password field on error
             email = ''  # Clear email field on error
     return render_template('register.html', email=email, password=password, confirm_password=confirm_password, error=error, success=success)
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    success = None
+    email = None
+    password = None
+
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password') or ''
+
+        try:
+            if not email:
+                raise ValueError('Email is required.')
+
+            validation_helpers.validate_email_and_password(email, password)
+
+            user = User.query.filter_by(email=email).first()
+            if not user or not user.check_password(password):
+                raise ValueError('Invalid email or password.')
+            
+            session['user_id'] = user.id
+            session['username'] = user.username
+            flash("Login successful! Welcome back.", "success")
+            return redirect(url_for('main.index'))
+
+        except ValueError as ve:
+            flash(str(ve), "danger")
+            password = ''  # Clear password field on error
+        except Exception:
+            current_app.logger.exception('Login failed with an unexpected error')
+            flash('An unexpected error occurred. Please try again later.', 'danger')
+            password = ''  # Clear password field on error
+            email = ''  # Clear email field on error
+    return render_template('login.html', email=email, password=password, error=error, success=success)
+
