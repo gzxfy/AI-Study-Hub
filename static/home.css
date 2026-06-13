@@ -1,65 +1,30 @@
 /* =============================================================
    home.css — AI StudyHub Home Page Styles
-   =============================================================
-
-   TABLE OF CONTENTS
-   -----------------
-   1.  CSS Custom Properties (:root)  ← define colors/spacing here
-   2.  Reset & Base
-   3.  Typography helpers
-   4.  Reusable Button styles         ← .btn variants used on every page
-   5.  Navbar
-   6.  Hero Section
-   7.  Features Section
-   8.  Feature Card
-   9.  CTA Banner Section
-   10. Footer
-   11. Media Queries (mobile)
-
-   HOW TO REUSE ACROSS PAGES
-   --------------------------
-   When you build login.css, dashboard.css etc., copy the :root
-   block (section 1) and the Reset block (section 2) into a
-   shared base.css file. Each page's CSS file will then only
-   contain page-specific rules.
-
-   WHY CSS CUSTOM PROPERTIES?
-   ---------------------------
-   Instead of hard-coding #4F46E5 in 20 places, we define it once
-   as --color-primary. When you want to change the brand color,
-   you change one line. This is the same pattern used in large
-   codebases and design systems.
+   Gamer aesthetic: charcoal + neon green
 ============================================================= */
 
 
 /* =============================================================
-   1. CSS CUSTOM PROPERTIES  (a.k.a. CSS Variables)
-   These are available to every rule in this file.
-   Prefix: --  |  Access: var(--name)
+   1. CSS CUSTOM PROPERTIES
 ============================================================= */
 :root {
+  --color-bg:                #0a0a0a;
+  --color-surface:           #111111;
+  --color-surface-elevated:  #161616;
+  --color-surface-hover:     #1a1a1a;
+  --color-border:            rgba(57, 255, 20, 0.25);
+  --color-border-strong:     rgba(57, 255, 20, 0.5);
 
-  /* --- Color Palette --- */
-  --color-bg:           #0F172A;   /* dark navy page background      */
-  --color-surface:      #1E293B;   /* card / navbar background       */
-  --color-surface-hover:#263347;   /* card hover state               */
-  --color-border:       #334155;   /* subtle divider lines           */
+  --color-primary:           #39FF14;
+  --color-primary-dark:      #2ecc11;
+  --color-primary-soft:      rgba(57, 255, 20, 0.08);
+  --color-success:           #39FF14;
+  --color-error:             #FF4444;
 
-  --color-primary:      #4F46E5;   /* indigo — main brand color      */
-  --color-primary-dark: #4338CA;   /* darker shade for hover states  */
-  --color-secondary:    #7C3AED;   /* purple — gradient end          */
-  --color-success:      #10B981;   /* green success messages         */
-  --color-error:        #EF4444;   /* red error messages             */
+  --color-text:              #F5F5F5;
+  --color-text-muted:        #9CA3AF;
+  --color-white:             #FFFFFF;
 
-  --color-text:         #F8FAFC;   /* primary readable text          */
-  --color-text-muted:   #94A3B8;   /* secondary / placeholder text   */
-
-  --color-white:        #FFFFFF;
-
-  /* --- Spacing Scale ---
-     Using a consistent 4px base scale keeps spacing predictable.
-     4 → 8 → 12 → 16 → 24 → 32 → 48 → 64 → 96
-  */
   --space-1:  4px;
   --space-2:  8px;
   --space-3:  12px;
@@ -70,41 +35,42 @@
   --space-8:  64px;
   --space-9:  96px;
 
-  /* --- Typography --- */
   --font-family:        'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-size-sm:       0.875rem;  /* 14px */
-  --font-size-base:     1rem;      /* 16px */
-  --font-size-md:       1.125rem;  /* 18px */
-  --font-size-lg:       1.25rem;   /* 20px */
-  --font-size-xl:       1.5rem;    /* 24px */
-  --font-size-2xl:      2rem;      /* 32px */
-  --font-size-3xl:      2.75rem;   /* 44px */
-  --font-size-4xl:      3.5rem;    /* 56px */
+  --font-family-mono:   Consolas, 'Courier New', monospace;
+  --font-size-sm:       0.875rem;
+  --font-size-base:     1rem;
+  --font-size-md:       1.125rem;
+  --font-size-lg:       1.25rem;
+  --font-size-xl:       1.5rem;
+  --font-size-2xl:      2rem;
+  --font-size-3xl:      2.75rem;
+  --font-size-4xl:      3.5rem;
 
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
   --font-weight-semibold: 600;
-  --font-weight-bold:   700;
-  --font-weight-black:  900;
+  --font-weight-bold:     700;
+  --font-weight-black:    900;
 
   --line-height-tight:  1.2;
   --line-height-normal: 1.6;
 
-  /* --- Layout --- */
-  --container-max:      1100px;    /* max page content width         */
-  --navbar-height:      68px;
+  --container-max:      1100px;
+  --navbar-height:      64px;
+  --sidebar-width:      240px;
 
-  /* --- Borders & Radius --- */
-  --radius-sm:          6px;
-  --radius-md:          10px;
-  --radius-lg:          16px;
-  --radius-pill:        999px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-pill: 999px;
 
-  /* --- Shadows --- */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
-  --shadow-btn:  0 2px 12px rgba(79, 70, 229, 0.4);
+  --glow-sm:     0 0 8px rgba(57, 255, 20, 0.3);
+  --glow-md:     0 0 16px rgba(57, 255, 20, 0.4);
+  --glow-lg:     0 0 24px rgba(57, 255, 20, 0.5);
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 0 0 1px rgba(57, 255, 20, 0.2), 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-btn:  0 0 12px rgba(57, 255, 20, 0.35);
 
-  /* --- Transitions --- */
   --transition-fast: 0.15s ease;
   --transition-base: 0.25s ease;
 }
@@ -112,9 +78,6 @@
 
 /* =============================================================
    2. RESET & BASE
-   Removes browser default spacing and sets sensible defaults.
-   box-sizing: border-box means padding/border are INCLUDED in
-   the element's total width — much easier to reason about.
 ============================================================= */
 *,
 *::before,
@@ -125,7 +88,7 @@
 }
 
 html {
-  scroll-behavior: smooth;         /* smooth scrolling for anchor links */
+  scroll-behavior: smooth;
 }
 
 body {
@@ -135,52 +98,58 @@ body {
   line-height:      var(--line-height-normal);
   color:            var(--color-text);
   background-color: var(--color-bg);
-  -webkit-font-smoothing: antialiased;  /* crisper text on macOS/Chrome */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Remove default list styling everywhere */
 ul, ol {
   list-style: none;
 }
 
-/* Make images responsive by default */
 img {
   max-width: 100%;
   display: block;
 }
 
-/* Remove default anchor styling */
 a {
   color: inherit;
   text-decoration: none;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--glow-sm);
+}
+
 
 /* =============================================================
-   3. TYPOGRAPHY HELPERS
-   Reusable classes for consistent text across pages.
+   3. SHARED ICONS
 ============================================================= */
+.icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
 
-/* Section eyebrow — small uppercase label above a main heading */
-.eyebrow {
-  font-size:      var(--font-size-sm);
-  font-weight:    var(--font-weight-semibold);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color:          var(--color-text-muted);
+.icon--lg {
+  width: 28px;
+  height: 28px;
+}
+
+.icon--brand {
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary);
+  filter: drop-shadow(0 0 4px rgba(57, 255, 20, 0.5));
 }
 
 
 /* =============================================================
    4. REUSABLE BUTTON STYLES
-   .btn is the base. Variants are added with modifier classes.
-   These will be reused on login.html, register.html, etc.
-
-   Variants:
-     .btn--primary  → filled indigo button (main CTA)
-     .btn--outline  → transparent with white border (secondary CTA)
-     .btn--ghost    → no border, subtle hover (navbar links)
-     .btn--large    → bigger padding for prominent CTAs
 ============================================================= */
 .btn {
   display:          inline-flex;
@@ -188,8 +157,8 @@ a {
   justify-content:  center;
   gap:              var(--space-2);
   padding:          10px var(--space-5);
-  border:           2px solid transparent;
-  border-radius:    var(--radius-pill);
+  border:           1px solid transparent;
+  border-radius:    var(--radius-md);
   font-family:      var(--font-family);
   font-size:        var(--font-size-base);
   font-weight:      var(--font-weight-semibold);
@@ -205,39 +174,40 @@ a {
 }
 
 .btn:hover {
-  transform: translateY(-1px);    /* subtle lift on hover */
+  transform: scale(1.03);
 }
 
 .btn:active {
-  transform: translateY(0);
+  transform: scale(1);
 }
 
-/* Primary — filled, branded */
 .btn--primary {
-  background-color: var(--color-primary);
+  background-color: var(--color-surface-elevated);
   border-color:     var(--color-primary);
-  color:            var(--color-white);
-  box-shadow:       var(--shadow-btn);
+  color:            var(--color-primary);
+  box-shadow:       0 0 8px rgba(57, 255, 20, 0.2);
+  text-shadow:      0 0 12px rgba(57, 255, 20, 0.3);
 }
 
 .btn--primary:hover {
-  background-color: var(--color-primary-dark);
-  border-color:     var(--color-primary-dark);
+  background-color: var(--color-primary-soft);
+  border-color:     var(--color-primary);
+  color:            var(--color-primary);
+  box-shadow:       var(--glow-md);
 }
 
-/* Outline — transparent fill, white border */
 .btn--outline {
   background-color: transparent;
-  border-color:     rgba(248, 250, 252, 0.4);
-  color:            var(--color-text);
+  border-color:     var(--color-border-strong);
+  color:            var(--color-primary);
 }
 
 .btn--outline:hover {
-  background-color: rgba(248, 250, 252, 0.08);
-  border-color:     rgba(248, 250, 252, 0.7);
+  background-color: var(--color-primary-soft);
+  border-color:     var(--color-primary);
+  box-shadow:       var(--glow-sm);
 }
 
-/* Ghost — used in navbar, text-like */
 .btn--ghost {
   background-color: transparent;
   border-color:     transparent;
@@ -247,85 +217,25 @@ a {
 }
 
 .btn--ghost:hover {
-  color:            var(--color-text);
-  background-color: rgba(248, 250, 252, 0.06);
+  color:            var(--color-primary);
+  background-color: var(--color-primary-soft);
+  box-shadow:       var(--glow-sm);
 }
 
-/* Large — bigger padding for hero CTAs */
 .btn--large {
-  padding:    14px var(--space-7);
-  font-size:  var(--font-size-md);
+  padding:   12px var(--space-6);
+  font-size: var(--font-size-md);
+}
+
+.btn--sm {
+  padding:   6px var(--space-3);
+  font-size: var(--font-size-sm);
 }
 
 
 /* =============================================================
-   5. NAVBAR
-   Sticky top bar that stays visible as the user scrolls.
-   Uses flexbox to push logo left and action buttons right.
+   5. ALERTS & FLASH MESSAGES
 ============================================================= */
-.navbar {
-  position:   sticky;
-  top:        0;
-  z-index:    100;           /* stays above page content */
-  width:      100%;
-  height:     var(--navbar-height);
-  background-color: var(--color-surface);
-  border-bottom:    1px solid var(--color-border);
-}
-
-/* Inner wrapper — constrains width and centers content */
-.navbar__container {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  max-width:       var(--container-max);
-  height:          100%;
-  margin:          0 auto;
-  padding:         0 var(--space-5);
-}
-
-/* Logo — flex row with icon + text */
-.navbar__logo {
-  display:        flex;
-  align-items:    center;
-  gap:            var(--space-2);
-  font-size:      var(--font-size-lg);
-  font-weight:    var(--font-weight-bold);
-  color:          var(--color-text);
-  text-decoration: none;
-  transition:     opacity var(--transition-fast);
-}
-
-.navbar__logo:hover {
-  opacity: 0.85;
-}
-
-.navbar__logo-icon {
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-/* Action buttons row */
-.navbar__actions {
-  display:  flex;
-  align-items: center;
-  gap:      var(--space-2);
-}
-
-.navbar__user {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  background-color: rgba(79, 70, 229, 0.15);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
 .flash-stack {
   max-width: var(--container-max);
   margin: var(--space-5) auto 0;
@@ -333,6 +243,12 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.flash-stack--dashboard {
+  max-width: none;
+  margin: 0 0 var(--space-5);
+  padding: 0;
 }
 
 .alert {
@@ -344,32 +260,78 @@ a {
 }
 
 .alert--success {
-  background-color: rgba(16, 185, 129, 0.15);
-  border-color: var(--color-success);
+  background-color: rgba(57, 255, 20, 0.08);
+  border-color: rgba(57, 255, 20, 0.4);
   color: var(--color-success);
+  box-shadow: var(--glow-sm);
 }
 
 .alert--danger {
-  background-color: rgba(239, 68, 68, 0.15);
-  border-color: var(--color-error);
+  background-color: rgba(255, 68, 68, 0.08);
+  border-color: rgba(255, 68, 68, 0.4);
   color: var(--color-error);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.25);
 }
 
 
 /* =============================================================
-   6. HERO SECTION
-   Full-width section with a gradient background. The heading
-   is large and bold to immediately communicate what the app is.
-   Centered layout using flexbox.
+   6. NAVBAR (guest landing)
+============================================================= */
+.navbar {
+  position:   sticky;
+  top:        0;
+  z-index:    100;
+  width:      100%;
+  height:     var(--navbar-height);
+  background-color: var(--color-surface);
+  border-bottom:    1px solid var(--color-border);
+  box-shadow:       0 0 20px rgba(57, 255, 20, 0.05);
+}
+
+.navbar__container {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  max-width:       var(--container-max);
+  height:          100%;
+  margin:          0 auto;
+  padding:         0 var(--space-5);
+}
+
+.navbar__logo {
+  display:        flex;
+  align-items:    center;
+  gap:            var(--space-2);
+  font-size:      var(--font-size-lg);
+  font-weight:    var(--font-weight-bold);
+  color:          var(--color-text);
+  transition:     color var(--transition-fast),
+                  text-shadow var(--transition-fast);
+}
+
+.navbar__logo:hover {
+  color:       var(--color-primary);
+  text-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+}
+
+.navbar__actions {
+  display:  flex;
+  align-items: center;
+  gap:      var(--space-2);
+}
+
+
+/* =============================================================
+   7. HERO SECTION
 ============================================================= */
 .hero {
-  /* Gradient goes from primary (indigo) to secondary (purple) */
-  background: linear-gradient(
-    135deg,
-    var(--color-primary)   0%,
-    var(--color-secondary) 100%
-  );
-  padding:    var(--space-9) var(--space-5);
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(57, 255, 20, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 20, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-9) var(--space-5);
   text-align: center;
 }
 
@@ -382,59 +344,56 @@ a {
   gap:        var(--space-5);
 }
 
-/* Small label above the main heading */
 .hero__eyebrow {
+  font-family:    var(--font-family-mono);
   font-size:      var(--font-size-sm);
   font-weight:    var(--font-weight-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color:          rgba(248, 250, 252, 0.75);
+  color:          var(--color-primary);
+  text-shadow:    0 0 12px rgba(57, 255, 20, 0.4);
 }
 
-/* Main headline — biggest text on the page */
 .hero__heading {
   font-size:   var(--font-size-4xl);
-  font-weight: var(--font-weight-black);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
-  color:       var(--color-white);
+  color:       var(--color-text);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
 }
 
-/* Supporting paragraph */
 .hero__subheading {
   font-size:  var(--font-size-md);
-  color:      rgba(248, 250, 252, 0.85);
+  color:      var(--color-text-muted);
   max-width:  560px;
   line-height: var(--line-height-normal);
 }
 
-/* CTA button row */
 .hero__actions {
   display:     flex;
   align-items: center;
   gap:         var(--space-4);
-  flex-wrap:   wrap;         /* wraps to two lines on narrow screens */
+  flex-wrap:   wrap;
   justify-content: center;
 }
 
-/* Small disclaimer / trust note below CTAs */
 .hero__note {
-  font-size:  var(--font-size-sm);
-  color:      rgba(248, 250, 252, 0.55);
-  margin-top: calc(-1 * var(--space-2));  /* tighten gap above */
+  font-family: var(--font-family-mono);
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
 }
 
 
 /* =============================================================
-   7. FEATURES SECTION
-   Off-white/dark section to visually separate from the hero.
-   Contains a heading + subheading + a CSS Grid of cards.
+   8. FEATURES SECTION
 ============================================================= */
 .features {
-  background-color: var(--color-bg);
+  background-color: var(--color-surface);
   padding: var(--space-9) var(--space-5);
+  border-top: 1px solid var(--color-border);
 }
 
-/* Constrain width and center */
 .features__container {
   max-width: var(--container-max);
   margin:    0 auto;
@@ -443,7 +402,6 @@ a {
   gap:       var(--space-8);
 }
 
-/* Header text block above the grid */
 .features__header {
   text-align: center;
 }
@@ -453,6 +411,7 @@ a {
   font-weight: var(--font-weight-bold);
   color:       var(--color-text);
   margin-bottom: var(--space-3);
+  letter-spacing: -0.02em;
 }
 
 .features__subheading {
@@ -460,51 +419,52 @@ a {
   color:     var(--color-text-muted);
 }
 
-/* CSS Grid — 2 columns on desktop, 1 column on mobile
-   auto-fit + minmax means: "fit as many 280px columns as possible,
-   but never make a column smaller than 280px". At 768px the grid
-   naturally collapses to 1 column. */
 .features__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-5);
 }
 
 
 /* =============================================================
-   8. FEATURE CARD
-   Individual cards inside the features grid.
-   Dark surface background with a hover lift + border highlight.
+   9. FEATURE CARD
 ============================================================= */
 .feature-card {
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-elevated);
   border:           1px solid var(--color-border);
   border-radius:    var(--radius-lg);
-  padding:          var(--space-7) var(--space-6);
+  padding:          var(--space-6);
   display:          flex;
   flex-direction:   column;
   gap:              var(--space-4);
-  box-shadow:       var(--shadow-card);
-  transition:       transform      var(--transition-base),
-                    border-color   var(--transition-base),
-                    background-color var(--transition-base);
+  box-shadow:       var(--shadow-sm);
+  transition:       border-color var(--transition-base),
+                    box-shadow   var(--transition-base),
+                    transform    var(--transition-base);
 }
 
 .feature-card:hover {
-  transform:        translateY(-4px);
-  border-color:     var(--color-primary);
-  background-color: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  box-shadow:   var(--shadow-card);
+  transform:    translateY(-2px);
 }
 
-/* Large emoji icon */
 .feature-card__icon {
-  font-size:   2.5rem;
-  line-height: 1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           48px;
+  height:          48px;
+  border-radius:   var(--radius-md);
+  background-color: var(--color-primary-soft);
+  color:           var(--color-primary);
+  border:          1px solid var(--color-border);
+  box-shadow:      var(--glow-sm);
 }
 
 .feature-card__title {
   font-size:   var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
   color:       var(--color-text);
 }
 
@@ -516,15 +476,12 @@ a {
 
 
 /* =============================================================
-   9. CTA BANNER SECTION
-   A second conversion nudge at the bottom of the page.
-   Slightly different background to visually break up the page
-   without requiring a new gradient — uses the surface color.
+   10. CTA BANNER
 ============================================================= */
 .cta-banner {
-  background-color: var(--color-surface);
-  border-top:    1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface-elevated);
+  border-top:    2px solid var(--color-primary);
+  box-shadow:    inset 0 1px 0 rgba(57, 255, 20, 0.1);
   padding: var(--space-9) var(--space-5);
   text-align: center;
 }
@@ -542,19 +499,18 @@ a {
   font-size:   var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color:       var(--color-text);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 16px rgba(57, 255, 20, 0.2);
 }
 
 .cta-banner__subheading {
   font-size: var(--font-size-md);
   color:     var(--color-text-muted);
-  margin-top: calc(-1 * var(--space-3));
 }
 
 
 /* =============================================================
-   10. FOOTER
-   Three-column layout: brand left, links center, credits right.
-   Falls back to a stacked column on mobile.
+   11. FOOTER
 ============================================================= */
 .footer {
   background-color: var(--color-surface);
@@ -569,18 +525,13 @@ a {
   align-items:     flex-start;
   justify-content: space-between;
   gap:             var(--space-6);
-  flex-wrap:       wrap;  /* wraps to column on small screens */
+  flex-wrap:       wrap;
 }
 
-/* Brand block */
 .footer__brand {
   display:        flex;
   flex-direction: column;
   gap:            var(--space-2);
-}
-
-.footer__logo-icon {
-  font-size: 1.5rem;
 }
 
 .footer__logo-text {
@@ -594,25 +545,25 @@ a {
   color:     var(--color-text-muted);
 }
 
-/* Footer navigation links */
 .footer__nav {
   display:        flex;
   flex-direction: column;
   gap:            var(--space-3);
-  padding-top:    var(--space-1);   /* align with text above */
+  padding-top:    var(--space-1);
 }
 
 .footer__link {
   font-size:   var(--font-size-sm);
   color:       var(--color-text-muted);
-  transition:  color var(--transition-fast);
+  transition:  color var(--transition-fast),
+               text-shadow var(--transition-fast);
 }
 
 .footer__link:hover {
-  color: var(--color-text);
+  color:       var(--color-primary);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
 }
 
-/* Credits block */
 .footer__credits {
   display:        flex;
   flex-direction: column;
@@ -621,9 +572,11 @@ a {
 }
 
 .footer__tech-note {
+  font-family: var(--font-family-mono);
   font-size:   var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color:       var(--color-primary);    /* highlights the tech stack */
+  color:       var(--color-primary);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
 }
 
 .footer__copyright {
@@ -633,24 +586,415 @@ a {
 
 
 /* =============================================================
-   11. MEDIA QUERIES — Mobile-first breakpoints
-   Everything above is the desktop layout.
-   These rules OVERRIDE for smaller screens.
-
-   Breakpoints used:
-     ≤768px  — tablet / large phone (landscape)
-     ≤480px  — small phone (portrait)
+   12. DASHBOARD LAYOUT
 ============================================================= */
+.dashboard {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+}
 
-/* ---- Tablet and below ---- */
+.dashboard__content {
+  display:        flex;
+  flex-direction: column;
+  min-width:      0;
+  background-color: var(--color-bg);
+}
+
+.dashboard__topbar {
+  display:      none;
+  align-items:  center;
+  gap:          var(--space-3);
+  height:       var(--navbar-height);
+  padding:      0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow:   0 0 12px rgba(57, 255, 20, 0.05);
+}
+
+.dashboard__topbar-title {
+  font-family: var(--font-family-mono);
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color:       var(--color-primary);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+}
+
+.dashboard__main {
+  flex:     1;
+  padding:  var(--space-6) var(--space-7);
+  max-width: 960px;
+}
+
+.dashboard__header {
+  margin-bottom: var(--space-7);
+}
+
+.dashboard__heading {
+  font-size:   var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color:       var(--color-text);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+  text-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+}
+
+.dashboard__subheading {
+  font-size: var(--font-size-base);
+  color:     var(--color-text-muted);
+}
+
+.dashboard__section {
+  margin-bottom: var(--space-7);
+}
+
+.dashboard__section-title {
+  font-family:    var(--font-family-mono);
+  font-size:      var(--font-size-sm);
+  font-weight:    var(--font-weight-semibold);
+  color:          var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom:  var(--space-4);
+  text-shadow:    0 0 8px rgba(57, 255, 20, 0.3);
+}
+
+
+/* =============================================================
+   13. SIDEBAR
+============================================================= */
+.sidebar {
+  display:        flex;
+  flex-direction: column;
+  height:         100vh;
+  position:       sticky;
+  top:            0;
+  background-color: var(--color-surface);
+  border-right:   1px solid var(--color-border);
+  padding:        var(--space-5) var(--space-4);
+  box-shadow:     4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar__brand {
+  margin-bottom: var(--space-6);
+}
+
+.sidebar__logo {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color:       var(--color-text);
+  transition:  color var(--transition-fast),
+               text-shadow var(--transition-fast);
+}
+
+.sidebar__logo:hover {
+  color:       var(--color-primary);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.sidebar__nav {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-1);
+  flex:           1;
+}
+
+.sidebar__link {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-3);
+  padding:       var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border:        1px solid transparent;
+  font-size:     var(--font-size-sm);
+  font-weight:   var(--font-weight-medium);
+  color:         var(--color-text-muted);
+  transition:    background-color var(--transition-fast),
+                 color            var(--transition-fast),
+                 border-color     var(--transition-fast),
+                 box-shadow       var(--transition-fast);
+}
+
+.sidebar__link:hover {
+  background-color: var(--color-surface-hover);
+  color:            var(--color-primary);
+  border-color:     var(--color-border);
+}
+
+.sidebar__link--active {
+  background-color: var(--color-primary-soft);
+  color:            var(--color-primary);
+  border-color:     var(--color-border-strong);
+  border-left:      3px solid var(--color-primary);
+  box-shadow:       var(--glow-sm);
+}
+
+.sidebar__link--active:hover {
+  background-color: var(--color-primary-soft);
+  color:            var(--color-primary);
+}
+
+.sidebar__link--disabled {
+  opacity: 0.55;
+  cursor:  default;
+  pointer-events: none;
+}
+
+.sidebar__footer {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);
+  padding-top:    var(--space-5);
+  border-top:     1px solid var(--color-border);
+}
+
+.sidebar__user {
+  font-family:   var(--font-family-mono);
+  font-size:     var(--font-size-sm);
+  font-weight:   var(--font-weight-semibold);
+  color:         var(--color-primary);
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  text-shadow:   0 0 8px rgba(57, 255, 20, 0.3);
+}
+
+.sidebar-toggle {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           36px;
+  height:          36px;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-md);
+  background-color: var(--color-surface-elevated);
+  color:           var(--color-primary);
+  cursor:          pointer;
+  transition:      background-color var(--transition-fast),
+                   box-shadow       var(--transition-fast),
+                   transform        var(--transition-fast);
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--color-primary-soft);
+  box-shadow:       var(--glow-sm);
+  transform:        scale(1.05);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+
+/* =============================================================
+   14. ACTION CARDS
+============================================================= */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.action-card {
+  display:          flex;
+  flex-direction:   column;
+  gap:              var(--space-3);
+  padding:          var(--space-5);
+  background-color: var(--color-surface-elevated);
+  border:           1px solid var(--color-border);
+  border-radius:    var(--radius-lg);
+  box-shadow:       var(--shadow-sm);
+  transition:       border-color var(--transition-base),
+                    box-shadow   var(--transition-base),
+                    transform    var(--transition-base);
+}
+
+.action-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow:   var(--shadow-card);
+  transform:    translateY(-2px);
+}
+
+.action-card--disabled {
+  opacity: 0.55;
+  cursor:  default;
+  pointer-events: none;
+}
+
+.action-card--disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.action-card__icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           40px;
+  height:          40px;
+  border-radius:   var(--radius-md);
+  background-color: var(--color-primary-soft);
+  color:           var(--color-primary);
+  border:          1px solid var(--color-border);
+  box-shadow:      var(--glow-sm);
+}
+
+.action-card__title {
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color:       var(--color-text);
+}
+
+.action-card__description {
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+
+/* =============================================================
+   15. NOTES LIST & EMPTY STATE
+============================================================= */
+.notes-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.note-row {
+  padding:          var(--space-4) var(--space-5);
+  background-color: var(--color-surface-elevated);
+  border:           1px solid var(--color-border);
+  border-radius:    var(--radius-lg);
+  transition:       border-color var(--transition-fast),
+                    box-shadow   var(--transition-fast);
+}
+
+.note-row:hover {
+  border-color: var(--color-border-strong);
+  box-shadow:   var(--glow-sm);
+}
+
+.note-row__title {
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color:       var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.note-row__meta {
+  font-family: var(--font-family-mono);
+  font-size:   var(--font-size-sm);
+  color:       var(--color-text-muted);
+}
+
+.empty-state {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  text-align:      center;
+  padding:         var(--space-8) var(--space-5);
+  border:          1px dashed var(--color-border-strong);
+  border-radius:   var(--radius-lg);
+  background-color: var(--color-surface);
+  box-shadow:      inset 0 0 30px rgba(57, 255, 20, 0.03);
+}
+
+.empty-state__icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           56px;
+  height:          56px;
+  margin-bottom:   var(--space-4);
+  border-radius:   var(--radius-lg);
+  background-color: var(--color-primary-soft);
+  color:           var(--color-primary);
+  border:          1px solid var(--color-border);
+  box-shadow:      var(--glow-md);
+}
+
+.empty-state__title {
+  font-size:   var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color:       var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.empty-state__description {
+  font-size:     var(--font-size-sm);
+  color:         var(--color-text-muted);
+  max-width:     360px;
+  margin-bottom: var(--space-5);
+  line-height:   var(--line-height-normal);
+}
+
+
+/* =============================================================
+   17. FORM INPUTS (cyberpunk / gaming style)
+============================================================= */
+input,
+textarea,
+select,
+input[type="search"],
+.form-input {
+  width:            100%;
+  padding:          var(--space-3) var(--space-4);
+  font-family:      var(--font-family-mono);
+  font-size:        var(--font-size-base);
+  color:            var(--color-text);
+  background-color: var(--color-bg);
+  border:           1px solid var(--color-border);
+  border-radius:    var(--radius-md);
+  caret-color:      var(--color-primary);
+  transition:       border-color var(--transition-fast),
+                    box-shadow   var(--transition-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+input:hover,
+textarea:hover,
+select:hover,
+input[type="search"]:hover,
+.form-input:hover {
+  border-color: var(--color-border-strong);
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+input[type="search"]:focus,
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(57, 255, 20, 0.2), var(--glow-sm);
+}
+
+input[type="search"] {
+  background-image: none;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+
+/* =============================================================
+   16. MEDIA QUERIES
+============================================================= */
 @media (max-width: 768px) {
-
-  /* Navbar: shrink logo text, keep buttons visible */
   .navbar__logo-text {
     font-size: var(--font-size-base);
   }
 
-  /* Hero: reduce heading size */
   .hero__heading {
     font-size: var(--font-size-3xl);
   }
@@ -659,8 +1003,6 @@ a {
     padding: var(--space-8) var(--space-4);
   }
 
-  /* Features: grid becomes 1-column automatically via auto-fit minmax,
-     but we also reduce vertical padding */
   .features {
     padding: var(--space-8) var(--space-4);
   }
@@ -669,12 +1011,10 @@ a {
     font-size: var(--font-size-xl);
   }
 
-  /* CTA Banner */
   .cta-banner {
     padding: var(--space-8) var(--space-4);
   }
 
-  /* Footer: stack columns vertically */
   .footer__container {
     flex-direction: column;
     align-items:    center;
@@ -694,17 +1034,53 @@ a {
   .footer__credits {
     text-align: center;
   }
+
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard__topbar {
+    display: flex;
+  }
+
+  .dashboard__main {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .sidebar {
+    position:   fixed;
+    top:        0;
+    left:       0;
+    z-index:    200;
+    width:      var(--sidebar-width);
+    transform:  translateX(-100%);
+    transition: transform var(--transition-base);
+    box-shadow: var(--shadow-card), var(--glow-sm);
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset:    0;
+    z-index:  150;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar-overlay--visible {
+    display: block;
+  }
 }
 
-/* ---- Small phone ---- */
 @media (max-width: 480px) {
-
-  /* Hero heading drops another size */
   .hero__heading {
     font-size: var(--font-size-2xl);
   }
 
-  /* Stack hero CTA buttons vertically */
   .hero__actions {
     flex-direction: column;
     width: 100%;
@@ -714,12 +1090,15 @@ a {
     width: 100%;
   }
 
-  /* Navbar: tighter padding, hide ghost "Log In" text when very narrow */
   .navbar__container {
     padding: 0 var(--space-4);
   }
 
   .btn--ghost {
-    display: none;    /* only show Register on tiny screens */
+    display: none;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
   }
 }
