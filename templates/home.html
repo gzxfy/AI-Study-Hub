@@ -13,37 +13,222 @@
 
   <body>
 
+    {% if session.get('username') %}
+
     <!-- =========================================================
-         NAVBAR
-         Sticky top bar. Unauthenticated view: logo + Login + Register.
-         When you add Flask auth later, you can swap these buttons
-         for a "Dashboard" link when session["user_id"] is set.
+         AUTHENTICATED DASHBOARD
+    ========================================================= -->
+    <div class="dashboard">
+
+      <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+      <aside class="sidebar" id="sidebar" aria-label="Dashboard navigation">
+        <div class="sidebar__brand">
+          <a href="{{ url_for('main.home') }}" class="sidebar__logo" aria-label="AI StudyHub home">
+            <svg class="icon icon--brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span class="sidebar__logo-text">AI StudyHub</span>
+          </a>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Main navigation">
+          <a href="{{ url_for('main.home') }}" class="sidebar__link sidebar__link--active">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Home
+          </a>
+          <a href="#" class="sidebar__link sidebar__link--disabled" aria-disabled="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Notes
+          </a>
+          <a href="#" class="sidebar__link sidebar__link--disabled" aria-disabled="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            AI Chat
+          </a>
+          <a href="#" class="sidebar__link sidebar__link--disabled" aria-disabled="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            Topics
+          </a>
+          <a href="#" class="sidebar__link sidebar__link--disabled" aria-disabled="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            Progress
+          </a>
+        </nav>
+
+        <div class="sidebar__footer">
+          <span class="sidebar__user">{{ session.get('username') }}</span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost btn--sm">Log Out</a>
+        </div>
+      </aside>
+
+      <div class="dashboard__content">
+        <header class="dashboard__topbar">
+          <button
+            class="sidebar-toggle"
+            id="sidebarToggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+            aria-controls="sidebar"
+          >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <span class="dashboard__topbar-title">Dashboard</span>
+        </header>
+
+        <div class="dashboard__main">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flash-stack flash-stack--dashboard">
+                {% for category, message in messages %}
+                  <div class="alert alert--{{ category }}" role="alert">{{ message }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          <header class="dashboard__header">
+            <h1 class="dashboard__heading">Welcome back, {{ session.get('username') }}</h1>
+            <p class="dashboard__subheading">Pick up where you left off or start something new.</p>
+          </header>
+
+          <section class="dashboard__section" aria-labelledby="actions-heading">
+            <h2 class="dashboard__section-title" id="actions-heading">Quick Actions</h2>
+            <div class="card-grid">
+
+              <a href="#" class="action-card action-card--disabled" aria-disabled="true">
+                <div class="action-card__icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </div>
+                <h3 class="action-card__title">New Note</h3>
+                <p class="action-card__description">Capture ideas and study material in one place.</p>
+              </a>
+
+              <a href="#" class="action-card action-card--disabled" aria-disabled="true">
+                <div class="action-card__icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <h3 class="action-card__title">AI Assistant</h3>
+                <p class="action-card__description">Ask questions and get explanations on any topic.</p>
+              </a>
+
+              <a href="#" class="action-card action-card--disabled" aria-disabled="true">
+                <div class="action-card__icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <h3 class="action-card__title">Topics</h3>
+                <p class="action-card__description">Organize your notes by subject or course.</p>
+              </a>
+
+              <a href="#" class="action-card action-card--disabled" aria-disabled="true">
+                <div class="action-card__icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                </div>
+                <h3 class="action-card__title">Progress</h3>
+                <p class="action-card__description">Track your study habits and milestones over time.</p>
+              </a>
+
+            </div>
+          </section>
+
+          <section class="dashboard__section" aria-labelledby="notes-heading">
+            <h2 class="dashboard__section-title" id="notes-heading">Recent Notes</h2>
+
+            {% if recent_notes is defined and recent_notes %}
+              <ul class="notes-list">
+                {% for note in recent_notes %}
+                  <li class="note-row">
+                    <div class="note-row__content">
+                      <h3 class="note-row__title">{{ note.title }}</h3>
+                      <p class="note-row__meta">
+                        {% if note.updated_at %}{{ note.updated_at.strftime('%b %d, %Y') }}{% endif %}
+                      </p>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="empty-state">
+                <div class="empty-state__icon" aria-hidden="true">
+                  <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+                <h3 class="empty-state__title">No notes yet</h3>
+                <p class="empty-state__description">
+                  Start capturing your study material. Your recent notes will appear here.
+                </p>
+                <a href="#" class="btn btn--primary action-card--disabled" aria-disabled="true">Create your first note</a>
+              </div>
+            {% endif %}
+          </section>
+
+        </div>
+      </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='home.js') }}"></script>
+
+    {% else %}
+
+    <!-- =========================================================
+         GUEST LANDING PAGE
     ========================================================= -->
     <nav class="navbar">
       <div class="navbar__container">
-
-        <!-- Logo -->
         <a href="{{ url_for('main.home') }}" class="navbar__logo" aria-label="AI StudyHub home">
-          <span class="navbar__logo-icon" aria-hidden="true">🧠</span>
+          <svg class="icon icon--brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
           <span class="navbar__logo-text">AI StudyHub</span>
         </a>
-
-        <!-- Navigation actions (unauthenticated) -->
         <div class="navbar__actions">
-          {% if session.get('username') %}
-            <span class="navbar__user">{{ session.get('username') }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn--ghost">Log Out</a>
-          {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn btn--ghost">Log In</a>
-            <a href="{{ url_for('auth.register') }}" class="btn btn--primary">Register</a>
-          {% endif %}
+          <a href="{{ url_for('auth.login') }}" class="btn btn--ghost">Log In</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn--primary">Register</a>
         </div>
-
       </div>
     </nav>
 
-    <main>
-      <!-- Flash messages for success/error feedback (placeholder) -->
+    <main class="landing">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-stack">
@@ -54,58 +239,33 @@
         {% endif %}
       {% endwith %}
 
-
-      <!-- =========================================================
-           HERO SECTION
-           First thing a visitor sees. Big headline, short pitch,
-           two CTAs directing to Register (primary action) and
-           Login (returning users).
-      ========================================================= -->
       <section class="hero" aria-labelledby="hero-heading">
         <div class="hero__container">
-
-          <!-- Eyebrow label above heading -->
           <p class="hero__eyebrow">Your AI-powered study companion</p>
-
-          <!-- Main headline -->
           <h1 class="hero__heading" id="hero-heading">
             Study Smarter<br />with AI
           </h1>
-
-          <!-- Sub-headline -->
           <p class="hero__subheading">
             AI StudyHub brings together an AI study assistant, organized notes,
             peer messaging, and progress tracking — all in one place built for
             students.
           </p>
-
-          <!-- CTA buttons -->
-            <a href="/register" class="btn btn--primary btn--large">
+          <div class="hero__actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--large">
               Get Started — It's Free
             </a>
-            <a href="/login" class="btn btn--outline btn--large">
+            <a href="{{ url_for('auth.login') }}" class="btn btn--outline btn--large">
               Log In
             </a>
           </div>
-          
-          <br>
-          <!-- Social proof note (placeholder) -->
           <p class="hero__note">
             No credit card required &nbsp;·&nbsp; Built for students
           </p>
-
         </div>
       </section>
 
-      <!-- =========================================================
-           FEATURES SECTION
-           Four cards, one per core feature. CSS Grid handles the
-           responsive layout (2-col desktop → 1-col mobile).
-           Each card: emoji icon + title + short description.
-      ========================================================= -->
       <section class="features" aria-labelledby="features-heading">
         <div class="features__container">
-
           <div class="features__header">
             <h2 class="features__heading" id="features-heading">
               Everything you need to succeed
@@ -115,12 +275,14 @@
             </p>
           </div>
 
-          <!-- Feature cards grid -->
           <div class="features__grid">
 
-            <!-- Card 1: AI Study Assistant -->
             <article class="feature-card">
-              <div class="feature-card__icon" aria-hidden="true">🤖</div>
+              <div class="feature-card__icon" aria-hidden="true">
+                <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
               <h3 class="feature-card__title">AI Study Assistant</h3>
               <p class="feature-card__description">
                 Ask questions, get explanations, and work through difficult
@@ -129,9 +291,15 @@
               </p>
             </article>
 
-            <!-- Card 2: Organized Notes -->
             <article class="feature-card">
-              <div class="feature-card__icon" aria-hidden="true">📝</div>
+              <div class="feature-card__icon" aria-hidden="true">
+                <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </div>
               <h3 class="feature-card__title">Organized Notes</h3>
               <p class="feature-card__description">
                 Create, search, and tag your study notes by topic or subject.
@@ -140,9 +308,15 @@
               </p>
             </article>
 
-            <!-- Card 3: Messaging -->
             <article class="feature-card">
-              <div class="feature-card__icon" aria-hidden="true">💬</div>
+              <div class="feature-card__icon" aria-hidden="true">
+                <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
               <h3 class="feature-card__title">Peer Messaging</h3>
               <p class="feature-card__description">
                 Connect and study with classmates directly inside the platform.
@@ -151,9 +325,14 @@
               </p>
             </article>
 
-            <!-- Card 4: Progress Tracking -->
             <article class="feature-card">
-              <div class="feature-card__icon" aria-hidden="true">📊</div>
+              <div class="feature-card__icon" aria-hidden="true">
+                <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </div>
               <h3 class="feature-card__title">Progress Tracking</h3>
               <p class="feature-card__description">
                 See how your study habits are trending over time. Track notes
@@ -162,17 +341,10 @@
               </p>
             </article>
 
-          </div><!-- /.features__grid -->
-
-        </div><!-- /.features__container -->
+          </div>
+        </div>
       </section>
 
-      <!-- =========================================================
-           CALL TO ACTION SECTION
-           A second, bottom-of-page CTA nudge for visitors who
-           scrolled through the features. A common pattern on SaaS
-           landing pages — you'll see this on almost every real app.
-      ========================================================= -->
       <section class="cta-banner" aria-labelledby="cta-heading">
         <div class="cta-banner__container">
           <h2 class="cta-banner__heading" id="cta-heading">
@@ -181,7 +353,7 @@
           <p class="cta-banner__subheading">
             Create your free account in under a minute.
           </p>
-          <a href="/register" class="btn btn--primary btn--large">
+          <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--large">
             Create Free Account
           </a>
         </div>
@@ -189,40 +361,32 @@
 
     </main>
 
-    <!-- =========================================================
-         FOOTER
-         Simple footer with copyright + quick links.
-         "Built with Flask & Python" signals tech stack to anyone
-         reviewing this as a portfolio project.
-    ========================================================= -->
     <footer class="footer">
       <div class="footer__container">
-
-        <!-- Footer logo + tagline -->
         <div class="footer__brand">
-          <span class="footer__logo-icon" aria-hidden="true">🧠</span>
+          <svg class="icon icon--brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
           <span class="footer__logo-text">AI StudyHub</span>
           <p class="footer__tagline">Study smarter, not harder.</p>
         </div>
-
-        <!-- Quick links -->
         <nav class="footer__nav" aria-label="Footer navigation">
-          <a href="home.html" class="footer__link">Home</a>
-          <a href="/register" class="footer__link">Register</a>
-
-          <a href="/login" class="footer__link">Login</a>
+          <a href="{{ url_for('main.home') }}" class="footer__link">Home</a>
+          <a href="{{ url_for('auth.register') }}" class="footer__link">Register</a>
+          <a href="{{ url_for('auth.login') }}" class="footer__link">Login</a>
         </nav>
-
-        <!-- Credits / copyright -->
         <div class="footer__credits">
           <p class="footer__tech-note">Built with Flask &amp; Python</p>
           <p class="footer__copyright">
             &copy; 2026 AI StudyHub. Portfolio project.
           </p>
         </div>
-
       </div>
     </footer>
+
+    {% endif %}
 
   </body>
 </html>
