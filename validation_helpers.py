@@ -40,3 +40,16 @@ def validate_item_data(title, description, price, url):
     if price_float < 0:
         raise ValueError("Price must be a positive number.")
     return True
+
+# Validation helper function for notes
+def validate_note_data(title, content):
+    if not title or title.strip() == "":
+        raise ValueError("Title is required.")
+    if not content or content.strip() == "":
+        raise ValueError("Content is required.")
+    if len(title) > 100:
+        raise ValueError("Title cannot be longer than 100 characters.")
+    if len(content) > 2000:
+        raise ValueError("Content cannot be longer than 2000 characters.")
+    # Additional validation can be added here, such as checking for prohibited words or formatting requirements
+    return True
