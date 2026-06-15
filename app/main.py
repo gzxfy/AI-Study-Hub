@@ -1,4 +1,6 @@
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
+
+import validation_helpers
 from .models import Note, db
 
 main_bp = Blueprint('main', __name__)
@@ -22,6 +24,12 @@ def create():
         
         content = request.form.get('content', '')
         title = request.form.get('title', '')
+
+        try:
+            validation_helpers.validate_note_data(title, content)
+        except ValueError as ve:
+            flash(str(ve), 'danger')
+            return render_template('create_note.html', content=content, title=title)  # Render the create page with existing data on error
         
 
         new_note = Note(user_id=user_id, title=title, content=content)
@@ -29,5 +37,5 @@ def create():
         db.session.commit()
         flash('Note created successfully!')  # Add a flash message to indicate successful creation
         return redirect(url_for('main.home'))
-    return render_template('create.html', content=content, title=title)  # Render the create page for GET requests
+    return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
     
