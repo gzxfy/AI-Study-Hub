@@ -83,3 +83,21 @@ def test_delete_note(client):
 
     note = Note.query.get(1)
     assert note is None  # The note should be deleted and no longer exist in the database
+
+def test_edit_note(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = client.post('/edit/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
+    assert b'Note updated successfully!' in response.data
+    assert response.status_code == 200
+
+    note = Note.query.get(1)  # Retrieve the note with ID 1 from the database
+    assert note.title == 'Updated Test Note'  # The note's title should be updated
+    assert note.content == 'This is an updated test note.'  # The note's content should be updated
+
+    response = client.get('/view/1', follow_redirects=True)
+    assert b'Updated Test Note' in response.data  # Assuming the note with ID 1 has the updated title
+    assert b'This is an updated test note.' in response.data  # Assuming the note with ID 1 has the updated content
+    assert response.status_code == 200
