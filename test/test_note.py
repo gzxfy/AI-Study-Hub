@@ -123,3 +123,15 @@ def test_unauthorization_delete_note(client):
     response = client.get('/delete/1', follow_redirects=True)
     assert b'You do not have permission to delete this note!' in response.data
     assert response.status_code == 200
+
+def test_dashboard_with_zero_notes(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    response = client.get('/')
+    assert Note.query.filter_by(user_id=1).count() == 0  # Ensure there are no notes for the user
+    assert b'No notes yet' in response.data  # Assuming the dashboard shows this message when there are no notes
+    assert response.status_code == 200
+    
+def test_dashboard_with_notes(client):
+    with client.session
