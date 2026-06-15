@@ -101,3 +101,25 @@ def test_edit_note(client):
     assert b'Updated Test Note' in response.data  # Assuming the note with ID 1 has the updated title
     assert b'This is an updated test note.' in response.data  # Assuming the note with ID 1 has the updated content
     assert response.status_code == 200
+
+def test_unauthorization_edit_note(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    with client.session_transaction() as session:
+        session['user_id'] = 2  # Switch to a different user
+    response = client.post('/edit/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
+    assert b'You do not have permission to edit this note!' in response.data
+    assert response.status_code == 200
+
+def test_unauthorization_delete_note(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    with client.session_transaction() as session:
+        session['user_id'] = 2  # Switch to a different user
+    response = client.get('/delete/1', follow_redirects=True)
+    assert b'You do not have permission to delete this note!' in response.data
+    assert response.status_code == 200
