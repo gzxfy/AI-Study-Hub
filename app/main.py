@@ -42,6 +42,11 @@ def create():
 @main_bp.route('/view/<int:note_id>')
 def view_note(note_id):
     note = Note.query.get(note_id)
+
+    # if note.user_id != session.get("user_id"):
+    #     flash('You do not have permission to view this note!', 'danger')
+    #     return redirect(url_for('main.home'))
+    
     if not note:
         flash('Note not found!', 'danger')
         return redirect(url_for('main.home'))
