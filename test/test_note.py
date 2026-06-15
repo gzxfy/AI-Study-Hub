@@ -123,3 +123,36 @@ def test_unauthorization_delete_note(client):
     response = client.get('/delete/1', follow_redirects=True)
     assert b'You do not have permission to delete this note!' in response.data
     assert response.status_code == 200
+
+def test_dashboard_with_zero_notes(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    response = client.get('/')
+    assert Note.query.filter_by(user_id=1).count() == 0  # Ensure there are no notes for the user
+    assert b'No notes yet' in response.data  # Assuming the dashboard shows this message when there are no notes
+    assert response.status_code == 200
+
+def test_dashboard_with_notes(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    # Create a note for the user
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = client.get('/')
+    assert Note.query.filter_by(user_id=1).count() > 0  # Ensure there are notes for the user
+    assert b'Test Note' in response.data  # Assuming the dashboard shows the note title
+    assert response.status_code == 200
+
+def test_dashboard_displays_five_notes(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    # Create six notes for the user
+    for i in range(6):
+        client.post('/create', data={'title': f'Test Note {i+1}', 'content': f'This is test note {i+1}.'}, follow_redirects=True)
+    response = client.get('/')
+    assert Note.query.filter_by(user_id=1).count() >= 5  # Ensure there are at least five notes for the user
+    for i in range(6, 1, -1):  # Check that the five most recent notes are displayed
+        assert f'Test Note {i}'.encode() in response.data
+    assert response.status_code == 200
