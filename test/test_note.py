@@ -71,3 +71,15 @@ def test_view_note(client):
     assert b'Test Note' in response.data  # Assuming the note with ID 1 has the title 'Test Note'
     assert b'This is a test note.' in response.data  # Assuming the note with ID 1 has the content 'This is a test note.'
     assert response.status_code == 200
+
+def test_delete_note(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = client.get('/delete/1', follow_redirects=True)  # Assuming 1 is an existing note_id
+    assert b'Note deleted successfully!' in response.data
+    assert response.status_code == 200
+
+    note = Note.query.get(1)
+    assert note is None  # The note should be deleted and no longer exist in the database
