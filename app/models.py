@@ -19,14 +19,14 @@ class User(UserMixin, db.Model):
     
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     color = db.Column(db.String(7), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
+    # notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
     progress = db.relationship('Progress', backref='topic', cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -37,14 +37,14 @@ class Note(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    # topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Note {self.title} for Topic {self.topic_id}>'
+        return f'<Note {self.title}>'
     
 class Conversation(db.Model):
     __tablename__ = 'conversations'
