@@ -1,3 +1,6 @@
+from app.models import Note
+
+
 def test_creating_note(client):
     # Set the user_id in the session
     with client.session_transaction() as session:
@@ -6,6 +9,11 @@ def test_creating_note(client):
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
     assert b'Note created successfully!' in response.data
     assert response.status_code == 200
+
+    note = Note.query.filter_by(user_id=1, title='Test Note').first()
+    assert note is not None
+    assert note.content == 'This is a test note.'
+    assert note.user_id == 1
 
 def test_empty_Title_creation(client):
     # Set the user_id in the session
