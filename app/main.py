@@ -38,4 +38,12 @@ def create():
         flash('Note created successfully!')  # Add a flash message to indicate successful creation
         return redirect(url_for('main.home'))
     return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
+
+@main_bp.route('/view/<int:note_id>')
+def view_note(note_id):
+    note = Note.query.get(note_id)
+    if not note:
+        flash('Note not found!', 'danger')
+        return redirect(url_for('main.home'))
+    return render_template('view_note.html', note=note)
     
