@@ -52,3 +52,22 @@ def test_content_length_exceeds_limit(client):
     response = client.post('/create', data={'title': 'Test Title', 'content': long_content}, follow_redirects=True)
     assert b'Content cannot be longer than 2000 characters.' in response.data
     assert response.status_code == 200
+
+def test_view_note_not_found(client):
+    # Set the user_id in the session
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.get('/view/9999', follow_redirects=True)  # Assuming 9999 is a non-existent note_id
+    assert b'Note not found!' in response.data
+    assert response.status_code == 200
+
+def test_view_note(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+
+    response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = client.get('/view/1', follow_redirects=True)  # Assuming 1 is an existing note_id
+    assert b'Test Note' in response.data  # Assuming the note with ID 1 has the title 'Test Note'
+    assert b'This is a test note.' in response.data  # Assuming the note with ID 1 has the content 'This is a test note.'
+    assert response.status_code == 200
