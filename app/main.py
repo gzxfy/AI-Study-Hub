@@ -51,4 +51,18 @@ def view_note(note_id):
         flash('Note not found!', 'danger')
         return redirect(url_for('main.home'))
     return render_template('view_note.html', note=note)
+
+@main_bp.route('/delete/<int:note_id>')
+def delete_note(note_id):
+    note = Note.query.get(note_id)
+    if not note:
+        flash('Note not found!', 'danger')
+        return redirect(url_for('main.home'))
+    if note.user_id != session.get("user_id"):
+        flash('You do not have permission to delete this note!', 'danger')
+        return redirect(url_for('main.home'))
+    db.session.delete(note)
+    db.session.commit()
+    flash('Note deleted successfully!', 'success')
+    return redirect(url_for('main.home'))
     
