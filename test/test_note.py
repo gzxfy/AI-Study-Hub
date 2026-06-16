@@ -1,4 +1,4 @@
-from app.models import Note
+from app.models import Note, Topic
 
 
 def test_creating_note(client):
@@ -156,3 +156,25 @@ def test_dashboard_displays_five_notes(client):
     for i in range(6, 1, -1):  # Check that the five most recent notes are displayed
         assert f'Test Note {i}'.encode() in response.data
     assert response.status_code == 200
+
+def test_note_in_topic(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    # Create a topic for the user
+    response = client.post('/topic/create', data={'title': 'Test Topic', 'description': 'This is a test topic.', 'color': '#ffffff'}, follow_redirects=True)
+    topic = Topic.query.filter_by(user_id=1).first()
+    # Create a note within the topic
+    response = client.post('/create', data={'title': 'Note in Topic', 'content': 'This note is in a topic.', 'topic_id': topic.id}, follow_redirects=True)
+    assert Note.query.filter_by(topic_id=topic.id).count() == 1  # Ensure the note is associated with the topic
+    assert b'Note in Topic' in response.data  # Assuming the note title is displayed after creation
+
+def test_note_without_topic(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    # Create a note without specifying a topic
+    response = client.post('/create', data={'title': 'Note without Topic', 'content': 'This note has no topic.'}, follow_redirects=True)
+    note = Note.query.filter_by(user_id=1, topic_id=None).first()
+    assert note is not None  # Ensure the note is created without a topic
+    assert b'Note without Topic' in response.data  # Assuming the note title is displayed after creation
