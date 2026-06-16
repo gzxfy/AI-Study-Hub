@@ -5,6 +5,7 @@ from .models import Note, Topic, db
 
 main_bp = Blueprint('main', __name__)
 
+
 @main_bp.route('/')
 def home():
     user_id = session.get("user_id")  # Get the user_id from the session
@@ -46,17 +47,18 @@ def create():
         return redirect(url_for('main.home'))
     return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
 
-@main_bp.route('/view/<int:note_id>')
+@main_bp.route('/view/<int:note_id>', methods=['GET'])
 def view_note(note_id):
     note = Note.query.get(note_id)
 
-    # if note.user_id != session.get("user_id"):
-    #     flash('You do not have permission to view this note!', 'danger')
-    #     return redirect(url_for('main.home'))
-    
     if not note:
         flash('Note not found!', 'danger')
         return redirect(url_for('main.home'))
+    
+    if note.user_id != session.get("user_id"):
+        flash('You do not have permission to view this note!', 'danger')
+        return redirect(url_for('main.home'))
+    
     return render_template('view_note.html', note=note)
 
 @main_bp.route('/delete/<int:note_id>')
@@ -134,4 +136,51 @@ def topic_view(topic_id):
     # Retrieve the notes associated with this topic
     notes = Note.query.filter_by(topic_id=topic.id).all()
     return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
-    
+
+#inspired and made with the help of ChatGPT
+@main_bp.route('/search')
+def search():
+    search_query = request.args.get('q', '').strip()
+    search_type = request.args.get('type', 'all').strip()
+
+    note_results = []
+    topic_results = []
+
+    if search_type == 'notes':
+        note_results = Note.query.filter(
+            Note.user_id == session.get("user_id"),
+            (
+                Note.title.contains(search_query)
+                |
+                Note.content.contains(search_query)
+            )
+        ).all()
+
+    elif search_type == 'topics':
+        topic_results = Topic.query.filter(
+            Topic.user_id == session.get("user_id"),
+            Topic.title.contains(search_query)
+        ).all()
+
+    else:
+        note_results = Note.query.filter(
+            Note.user_id == session.get("user_id"),
+            (
+                Note.title.contains(search_query)
+                |
+                Note.content.contains(search_query)
+            )
+        ).all()
+
+        topic_results = Topic.query.filter(
+            Topic.user_id == session.get("user_id"),
+            Topic.title.contains(search_query)
+        ).all()
+
+    return render_template(
+        'search.html',
+        note_results=note_results,
+        topic_results=topic_results,
+        search_query=search_query,
+        search_type=search_type
+    )
