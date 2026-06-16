@@ -1,7 +1,7 @@
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
 import validation_helpers
-from .models import Note, db
+from .models import Note, Topic, db
 
 main_bp = Blueprint('main', __name__)
 
@@ -97,4 +97,28 @@ def edit_note(note_id):
         flash('Note updated successfully!', 'success')
         return redirect(url_for('main.view_note', note_id=note.id))
     return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
+
+@main_bp.route('/topic/create')
+def topic_create():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        color = request.form.get('color')
+        
+        try:
+            validation_helpers.validate_topic_data(title, description, color)
+        except ValueError as ve:
+            flash(str(ve), 'danger')
+            return render_template('create_topic.html', title=title, description=description, color=color)  # Render the create topic page with existing data on error
+        new_topic = Topic(
+            user_id=session.get("user_id"),
+            title=title,
+            description=description,
+            color=color
+        )
+        db.session.add(new_topic)
+        db.session.commit()
+        flash('Topic created successfully!', 'success')
+        return redirect(url_for('main.home'))
+    return render_template('create_topic.html')  # Render the create topic page for GET requests
     
