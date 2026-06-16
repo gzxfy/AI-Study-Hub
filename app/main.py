@@ -46,17 +46,18 @@ def create():
         return redirect(url_for('main.home'))
     return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
 
-@main_bp.route('/view/<int:note_id>')
+@main_bp.route('/view/<int:note_id>', methods=['GET'])
 def view_note(note_id):
     note = Note.query.get(note_id)
 
-    # if note.user_id != session.get("user_id"):
-    #     flash('You do not have permission to view this note!', 'danger')
-    #     return redirect(url_for('main.home'))
-    
     if not note:
         flash('Note not found!', 'danger')
         return redirect(url_for('main.home'))
+    
+    if note.user_id != session.get("user_id"):
+        flash('You do not have permission to view this note!', 'danger')
+        return redirect(url_for('main.home'))
+    
     return render_template('view_note.html', note=note)
 
 @main_bp.route('/delete/<int:note_id>')
@@ -134,4 +135,41 @@ def topic_view(topic_id):
     # Retrieve the notes associated with this topic
     notes = Note.query.filter_by(topic_id=topic.id).all()
     return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
-    
+
+#inspired by ChatGPT
+@main_bp.route('/search')
+def search_note():
+    search_query = request.args.get('q', '').strip()  # Get the search query and strip any leading/trailing whitespace
+    search_type = request.args.get('type', 'all').strip()  # Get the search type (title or content) and strip any leading/trailing whitespace
+    notes_results = []
+    topic_results = []
+
+    if search_type == 'notes':
+        notes_results = Note.query.filter(
+        Note.user_id == session.get("user_id"),
+        (
+            Note.title.contains(search_query)
+            |
+            Note.content.contains(search_query)
+        )
+    ).all()
+    elif search_type == 'topics':
+        topic_results = Topic.query.filter(
+        Topic.user_id == session.get("user_id"),
+        Topic.title.contains(search_query)
+    ).all()
+    else:  # If search_type is 'all' or any other value, search both notes and topics
+        notes_results = Note.query.filter(
+            Note.user_id == session.get("user_id"),
+            (
+                Note.title.contains(search_query)
+                |
+                Note.content.contains(search_query)
+            )
+        ).all()
+
+        topic_results = Topic.query.filter(
+            Topic.user_id == session.get("user_id"),
+            Topic.title.contains(search_query)
+        ).all()
+    return render_template('search_results.html', notes=notes_results, topics=topic_results, query=search_query)  # Render the search results page with the filtered notes and topics

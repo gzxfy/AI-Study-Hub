@@ -1,0 +1,79 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<form method="GET" action="{{ url_for('main.search') }}">
+    <input
+        type="text"
+        name="q"
+        value="{{ search_query }}"
+        placeholder="Search..."
+    >
+
+    <select name="type">
+        <option value="all">All</option>
+        <option value="notes">Notes</option>
+        <option value="topics">Topics</option>
+    </select>
+
+    <button type="submit">
+        Search
+    </button>
+</form>
+
+<option
+    value="all"
+    {% if search_type == 'all' %}selected{% endif %}
+>
+    All
+</option>
+
+<option
+    value="notes"
+    {% if search_type == 'notes' %}selected{% endif %}
+>
+    Notes
+</option>
+
+<option
+    value="topics"
+    {% if search_type == 'topics' %}selected{% endif %}
+>
+    Topics
+</option>
+
+{% if topic_results %}
+<h2>Topics</h2>
+
+{% for topic in topic_results %}
+    <a href="{{ url_for('main.topic_view', topic_id=topic.id) }}">
+        {{ topic.title }}
+    </a>
+{% endfor %}
+{% endif %}
+
+{% if note_results %}
+<h2>Notes</h2>
+
+{% for note in note_results %}
+    <a href="{{ url_for('main.view_note', note_id=note.id) }}">
+        {{ note.title }}
+    </a>
+{% endfor %}
+{% endif %}
+
+{% if note_results %}
+<h2>Notes</h2>
+
+{% for note in note_results %}
+    <a href="{{ url_for('main.view_note', note_id=note.id) }}">
+        {{ note.title }}
+    </a>
+{% endfor %}
+{% endif %}

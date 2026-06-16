@@ -178,3 +178,13 @@ def test_note_without_topic(client):
     note = Note.query.filter_by(user_id=1, topic_id=None).first()
     assert note is not None  # Ensure the note is created without a topic
     assert b'Note without Topic' in response.data  # Assuming the note title is displayed after creation
+
+def test_search_notes(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+    # Create a note to search for
+    client.post('/create', data={'title': 'Searchable Note', 'content': 'This note can be searched.'}, follow_redirects=True)
+    # Search for the note by title
+    response = client.get('/view/1?query=Searchable', follow_redirects=True)
+    assert b'Searchable Note' in response.data  # Ensure the note is found in the search results
