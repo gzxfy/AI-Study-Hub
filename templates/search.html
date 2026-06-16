@@ -27,26 +27,22 @@
     </button>
 </form>
 
-<option
-    value="all"
-    {% if search_type == 'all' %}selected{% endif %}
->
-    All
-</option>
+<select name="type">
+    <option value="all"
+        {% if search_type == 'all' %}selected{% endif %}>
+        All
+    </option>
 
-<option
-    value="notes"
-    {% if search_type == 'notes' %}selected{% endif %}
->
-    Notes
-</option>
+    <option value="notes"
+        {% if search_type == 'notes' %}selected{% endif %}>
+        Notes
+    </option>
 
-<option
-    value="topics"
-    {% if search_type == 'topics' %}selected{% endif %}
->
-    Topics
-</option>
+    <option value="topics"
+        {% if search_type == 'topics' %}selected{% endif %}>
+        Topics
+    </option>
+</select>
 
 {% if topic_results %}
 <h2>Topics</h2>
@@ -68,12 +64,6 @@
 {% endfor %}
 {% endif %}
 
-{% if note_results %}
-<h2>Notes</h2>
-
-{% for note in note_results %}
-    <a href="{{ url_for('main.view_note', note_id=note.id) }}">
-        {{ note.title }}
-    </a>
-{% endfor %}
+{% if not note_results and not topic_results and search_query %}
+    <p>No results found.</p>
 {% endif %}
