@@ -53,3 +53,18 @@ def validate_note_data(title, content):
         raise ValueError("Content cannot be longer than 2000 characters.")
     # Additional validation can be added here, such as checking for prohibited words or formatting requirements
     return True
+
+# Validation helper function for topics
+def validate_topic_data(title, description, color):
+    if not title or title.strip() == "":
+        raise ValueError("Title is required.")
+    if not description or description.strip() == "":
+        raise ValueError("Description is required.")
+    if not color or color.strip() == "":
+        color = "#000000"  # Default color if none is provided
+    if len(title) > 100:
+        raise ValueError("Title cannot be longer than 100 characters.")
+    if len(description) > 1000:
+        raise ValueError("Description cannot be longer than 1000 characters.")
+    # Additional validation can be added here, such as checking for prohibited words or formatting requirements
+    return True

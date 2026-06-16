@@ -1,7 +1,7 @@
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
 import validation_helpers
-from .models import Note, db
+from .models import Note, Topic, db
 
 main_bp = Blueprint('main', __name__)
 
@@ -28,6 +28,9 @@ def create():
         
         content = request.form.get('content', '')
         title = request.form.get('title', '')
+        topic_id = request.form.get('topic_id')  # Get the topic_id from the form, if provided
+        if not topic_id:
+            topic_id = None  # Convert the topic_id to an integer if provided
 
         try:
             validation_helpers.validate_note_data(title, content)
@@ -36,7 +39,7 @@ def create():
             return render_template('create_note.html', content=content, title=title)  # Render the create page with existing data on error
         
 
-        new_note = Note(user_id=user_id, title=title, content=content)
+        new_note = Note(user_id=user_id, title=title, content=content, topic_id=topic_id)
         db.session.add(new_note)
         db.session.commit()
         flash('Note created successfully!')  # Add a flash message to indicate successful creation
@@ -97,4 +100,38 @@ def edit_note(note_id):
         flash('Note updated successfully!', 'success')
         return redirect(url_for('main.view_note', note_id=note.id))
     return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
+
+@main_bp.route('/topic/create', methods=['GET', 'POST'])
+def topic_create():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        color = request.form.get('color')
+
+        try:
+            validation_helpers.validate_topic_data(title, description, color)
+        except ValueError as ve:
+            flash(str(ve), 'danger')
+            return render_template('create_topic.html', title=title, description=description, color=color)  # Render the create topic page with existing data on error
+        new_topic = Topic(
+            user_id=session.get("user_id"),
+            title=title,
+            description=description,
+            color=color
+        )
+        db.session.add(new_topic)
+        db.session.commit()
+        flash('Topic created successfully!', 'success')
+        return redirect(url_for('main.home'))
+    return render_template('create_topic.html')  # Render the create topic page for GET requests
+
+@main_bp.route('/topic/<int:topic_id>')
+def topic_view(topic_id):
+    topic = Topic.query.get_or_404(topic_id)
+    if topic.user_id != session.get("user_id"):
+        flash('You do not have permission to view this topic!', 'danger')
+        return redirect(url_for('main.home'))
+    # Retrieve the notes associated with this topic
+    notes = Note.query.filter_by(topic_id=topic.id).all()
+    return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
     
