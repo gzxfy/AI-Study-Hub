@@ -26,7 +26,7 @@ class Topic(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
+    notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
     progress = db.relationship('Progress', backref='topic', cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -37,7 +37,7 @@ class Note(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
