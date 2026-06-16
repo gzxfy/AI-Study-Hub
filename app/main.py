@@ -5,6 +5,7 @@ from .models import Note, Topic, db
 
 main_bp = Blueprint('main', __name__)
 
+
 @main_bp.route('/')
 def home():
     user_id = session.get("user_id")  # Get the user_id from the session
@@ -136,30 +137,33 @@ def topic_view(topic_id):
     notes = Note.query.filter_by(topic_id=topic.id).all()
     return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
 
-#inspired by ChatGPT
+#inspired and made with the help of ChatGPT
 @main_bp.route('/search')
-def search_note():
-    search_query = request.args.get('q', '').strip()  # Get the search query and strip any leading/trailing whitespace
-    search_type = request.args.get('type', 'all').strip()  # Get the search type (title or content) and strip any leading/trailing whitespace
-    notes_results = []
+def search():
+    search_query = request.args.get('q', '').strip()
+    search_type = request.args.get('type', 'all').strip()
+
+    note_results = []
     topic_results = []
 
     if search_type == 'notes':
-        notes_results = Note.query.filter(
-        Note.user_id == session.get("user_id"),
-        (
-            Note.title.contains(search_query)
-            |
-            Note.content.contains(search_query)
-        )
-    ).all()
+        note_results = Note.query.filter(
+            Note.user_id == session.get("user_id"),
+            (
+                Note.title.contains(search_query)
+                |
+                Note.content.contains(search_query)
+            )
+        ).all()
+
     elif search_type == 'topics':
         topic_results = Topic.query.filter(
-        Topic.user_id == session.get("user_id"),
-        Topic.title.contains(search_query)
-    ).all()
-    else:  # If search_type is 'all' or any other value, search both notes and topics
-        notes_results = Note.query.filter(
+            Topic.user_id == session.get("user_id"),
+            Topic.title.contains(search_query)
+        ).all()
+
+    else:
+        note_results = Note.query.filter(
             Note.user_id == session.get("user_id"),
             (
                 Note.title.contains(search_query)
@@ -172,4 +176,11 @@ def search_note():
             Topic.user_id == session.get("user_id"),
             Topic.title.contains(search_query)
         ).all()
-    return render_template('search_results.html', notes=notes_results, topics=topic_results, query=search_query)  # Render the search results page with the filtered notes and topics
+
+    return render_template(
+        'search.html',
+        note_results=note_results,
+        topic_results=topic_results,
+        search_query=search_query,
+        search_type=search_type
+    )
