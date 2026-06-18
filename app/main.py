@@ -218,3 +218,27 @@ def ai_assistant(note_id):
             
         return redirect(url_for('main.ai_assistant', note_id=note_id))
     return render_template('AI Assistant.html', note=note, messages=messages)
+
+@main_bp.route('/debug-notes')
+def debug_notes():
+
+    notes = Note.query.all()
+
+    return {
+        "count": len(notes),
+        "notes": [
+            {
+                "id": note.id,
+                "user_id": note.user_id,
+                "title": note.title
+            }
+            for note in notes
+        ]
+    }
+
+@main_bp.route('/debug-session')
+def debug_session():
+    return {
+        "user_id": session.get("user_id"),
+        "username": session.get("username")
+    }
