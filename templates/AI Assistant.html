@@ -1,0 +1,26 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-stack">
+      {% for category, message in messages %}
+        <div class="alert alert--{{ category }}" role="alert">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('main.ai_assistant') }}">
+  <input name="message" type="text" placeholder="Type your message here..." />
+  <button type="submit">Send</button>
+</form>
+
+{% for message in messages %}
+
+    {% if message.role == 'user' %}
+        User:
+    {% else %}
+        AI:
+    {% endif %}
+
+    {{ message.content }}
+
+{% endfor %}

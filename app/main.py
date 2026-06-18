@@ -1,7 +1,10 @@
+from mailbox import Message
+from pyexpat.errors import messages
+
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
 import validation_helpers
-from .models import Note, Topic, db
+from .models import Conversation, Note, Topic, db
 
 main_bp = Blueprint('main', __name__)
 
@@ -184,3 +187,36 @@ def search():
         search_query=search_query,
         search_type=search_type
     )
+
+@main_bp.route('/chat/<int:note_id>', methods=['GET', 'POST'])
+def ai_assistant(note_id):
+
+    note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
+    conversation = Conversation.query.filter_by(note_id=note_id).all()
+    if not note:
+        flash("Note not found.", "error")
+        return redirect(url_for('main.dashboard'))
+    
+    if note.user.id != session.get("user_id"):
+        flash("You do not have permission to access this note.", "error")
+        return redirect(url_for('main.dashboard'))
+    
+    if not conversation:
+        conversation = Conversation(note_id=note_id, user_id=session.get("user_id"), topic_id=note.topic.id, content="")
+        db.session.add(conversation)
+        db.session.commit()
+
+    messages = Message.query.filter_by(conversation_id=conversation[0].id).all() if conversation else []
+    if request.method == 'POST':
+        message = request.form.get('message').strip()
+        if message:
+            user_message = Message(conversation_id=conversation[0].id, role='user', content=message)
+            db.session.add(user_message)
+            db.session.commit()
+            flash(f'You said: {message}', 'info')
+            # Here you would typically process the message with your AI assistant logic and generate a response
+            assistant_message = Message(conversation_id=conversation[0].id, role='assistant', content=ai_response)
+            db.session.add(assistant_message)
+            db.session.commit()
+        return redirect(url_for('main.ai_assistant', note_id=note_id))
+    return render_template('AI Assistant.html', note=note, messages=messages)
