@@ -1,10 +1,15 @@
+from openai import OpenAI
+import os
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def ask_ai(question, note_content):
-    # This is a placeholder function for interacting with an AI service
-    # In a real implementation, this function would send the message to the AI and return the response
-    prompt = f"""
-    Note = 
-    {note_content}
-    Question = 
-    {question}
-    """
-    return f'You said: {question} Note content: {note_content}'
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "user", "content": question}
+        ]
+    )
+    print(response)
+    print(response.choices[0].message.content)
+    print(type(response))
+    return response.choices[0].message.content
+    print(type(response.choices[0].message.content))
