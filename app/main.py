@@ -3,6 +3,7 @@ from pyexpat.errors import messages
 
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
+from app.services.ai_service import ask_ai
 import validation_helpers
 from .models import Conversation, Note, Topic, db, Message
 
@@ -196,13 +197,13 @@ def ai_assistant(note_id):
         flash("Note not found.", "error")
         return redirect(url_for('main.home'))
     
-    conversation = Conversation.query.filter_by(note_id=note_id).first()
+    conversation = note.conversations[0] if note.conversations else None
     if not conversation:
         conversation = Conversation(note_id=note_id, user_id=session.get("user_id"))
         db.session.add(conversation)
         db.session.commit()
 
-    messages = Message.query.filter_by(conversation_id=conversation.id).all() if conversation else []
+    messages = conversation.messages
     if request.method == 'POST':
         print("POST request received")
         message = request.form.get('message').strip()
@@ -210,7 +211,7 @@ def ai_assistant(note_id):
         if message:
             user_message = Message(conversation_id=conversation.id, role='user', content=message)
             db.session.add(user_message)
-            ai_response = f'You said: {message}'
+            ai_response = ask_ai(message, question=note.content)
             # Here you would typically process the message with your AI assistant logic and generate a response
             assistant_message = Message(conversation_id=conversation.id, role='assistant', content=ai_response)
             db.session.add(assistant_message)
