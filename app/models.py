@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
 
     topics = db.relationship('Topic', backref='user', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='user', cascade="all, delete-orphan")
-    conversations = db.relationship('Conversation', backref='user', cascade="all, delete-orphan")
+    conversation = db.relationship('Conversation', backref='user', cascade="all, delete-orphan", uselist=False)
     progress = db.relationship('Progress', backref='user', cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -43,13 +43,13 @@ class Note(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    conversations = db.relationship('Conversation', backref='note', cascade='all, delete-orphan', uselist=False)
+    conversation = db.relationship('Conversation', backref='note', cascade='all, delete-orphan', uselist=False)
 
     def __repr__(self):
         return f'<Note {self.title}>'
     
 class Conversation(db.Model):
-    __tablename__ = 'conversations'
+    __tablename__ = 'conversation'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -65,7 +65,7 @@ class Message(db.Model):
     __tablename__ = 'messages'
 
     id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
