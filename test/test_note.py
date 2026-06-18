@@ -1,4 +1,6 @@
-from app.models import Note, Topic
+from email.message import Message
+
+from app.models import Conversation, Note, Topic, Message
 
 
 def test_creating_note(client):
@@ -201,7 +203,7 @@ def test_search_topics(client):
     assert b'Searchable Topic' in response.data  # Ensure the topic is found in the search results
     assert response.status_code == 200  # Ensure the search request was successful
 
-def test_test_search_no_results(client):
+def test_search_no_results(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
@@ -209,3 +211,57 @@ def test_test_search_no_results(client):
     response = client.get('/search?q=NonExistent&type=notes', follow_redirects=True)
     assert b'No results found' in response.data  # Ensure the no results message is shown
     assert response.status_code == 200  # Ensure the search request was successful
+
+def test_ai_chat_loads(client):
+    response = client.get('/chat/1', follow_redirects=True)
+    assert response.status_code == 200  # Ensure the AI chat page loads successfully
+
+def test_conversation_created(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    client.post('/create', data={'title': 'Searchable Note', 'content': 'This note can be searched.'}, follow_redirects=True)
+
+    # Access the AI chat for a note, which should create a conversation if it doesn't exist
+    response = client.get('/chat/1', follow_redirects=True)
+    assert response.status_code == 200  # Ensure the AI chat page loads successfully
+    assert Conversation.query.count() == 1  # Ensure a conversation was created for the note
+
+def test_message_being_saved(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    client.post('/create', data={'title': 'Message Test Note', 'content': 'This note is for testing messages.'}, follow_redirects=True)
+
+    # Access the AI chat for the note to create a conversation
+    client.get('/chat/1', follow_redirects=True)
+
+    # Send a message in the AI chat
+    client.post('/chat/1', data={'message': 'Hello AI!'}, follow_redirects=True)
+    print(Message.query.filter_by(conversation_id=1).all())
+    print(len(Message.query.filter_by(conversation_id=1).all()))
+
+    # Ensure the message was saved in the database
+    conversation = Conversation.query.filter_by(note_id=1).first()
+    assert conversation is not None  # Ensure the conversation exists
+    assert Message.query.filter_by(conversation_id=conversation.id, content='Hello AI!').count() == 1  # Ensure the message was saved
+
+def test_assistant_message_being_saved(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    client.post('/create', data={'title': 'Assistant Message Test Note', 'content': 'This note is for testing assistant messages.'}, follow_redirects=True)
+
+    # Access the AI chat for the note to create a conversation
+    client.get('/chat/1', follow_redirects=True)
+
+    # Send a message in the AI chat to trigger an assistant response
+    client.post('/chat/1', data={'message': 'Hello AI!'}, follow_redirects=True)
+
+    # Ensure the assistant message was saved in the database
+    conversation = Conversation.query.filter_by(note_id=1).first()
+    assert conversation is not None  # Ensure the conversation exists
+    assert Message.query.filter_by(conversation_id=conversation.id, role='assistant').count() == 1  # Ensure the assistant message was saved
