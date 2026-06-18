@@ -2,6 +2,7 @@ from mailbox import Message
 from pyexpat.errors import messages
 
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
+from flask_wtf import csrf
 
 from app.services.ai_service import ask_ai
 import validation_helpers
@@ -242,3 +243,57 @@ def debug_session():
         "user_id": session.get("user_id"),
         "username": session.get("username")
     }
+
+
+
+@main_bp.route('/debug-ai', methods=['GET', 'POST'])
+@csrf.exempt
+def debug_ai():
+    
+    answer = None
+
+    if request.method == 'POST':
+        question = request.form.get('message')
+
+        answer = ask_ai(
+            question,
+            note_content="Binary search repeatedly divides a sorted array."
+        )
+
+    return render_template(
+        'debug_ai.html',
+        answer=answer
+    )
+
+@main_bp.route('/debug-ai', methods=['GET', 'POST'])
+@csrf.exempt
+def create():
+    content = None  # Initialize content variable or any other logic needed before rendering the create page
+    title = None  # Initialize title variable or any other logic needed before rendering the create page
+
+    if request.method == 'POST':
+    # Add logic to handle form submission or data processing
+        user_id = session.get("user_id")  # Retrieve the user_id from the session
+        if not user_id:
+            flash('User not logged in!')
+            return redirect(url_for('main.home'))
+        
+        content = request.form.get('content', '')
+        title = request.form.get('title', '')
+        topic_id = request.form.get('topic_id')  # Get the topic_id from the form, if provided
+        if not topic_id:
+            topic_id = None  # Convert the topic_id to an integer if provided
+
+        try:
+            validation_helpers.validate_note_data(title, content)
+        except ValueError as ve:
+            flash(str(ve), 'danger')
+            return render_template('create_note.html', content=content, title=title)  # Render the create page with existing data on error
+        
+
+        new_note = Note(user_id=user_id, title=title, content=content, topic_id=topic_id)
+        db.session.add(new_note)
+        db.session.commit()
+        flash('Note created successfully!')  # Add a flash message to indicate successful creation
+        return redirect(url_for('main.home'))
+    return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
