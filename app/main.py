@@ -197,7 +197,7 @@ def ai_assistant(note_id):
         flash("Note not found.", "error")
         return redirect(url_for('main.home'))
     
-    conversation = note.conversations[0] if note.conversations else None
+    conversation = note.conversation if note.conversation else None
     if not conversation:
         conversation = Conversation(note_id=note_id, user_id=session.get("user_id"))
         db.session.add(conversation)
@@ -206,15 +206,15 @@ def ai_assistant(note_id):
     messages = conversation.messages
     if request.method == 'POST':
         print("POST request received")
-        message = request.form.get('message').strip()
+        question = request.form.get('message').strip()
 
-        if message:
-            user_message = Message(conversation_id=conversation.id, role='user', content=message)
+        if question:
+            user_message = Message(conversation_id=conversation.id, role='user', content=question)
             db.session.add(user_message)
-            ai_response = ask_ai(message, question=note.content)
-            # Here you would typically process the message with your AI assistant logic and generate a response
+            ai_response = ask_ai(question, note_content=note.content)
             assistant_message = Message(conversation_id=conversation.id, role='assistant', content=ai_response)
             db.session.add(assistant_message)
             db.session.commit()
+            
         return redirect(url_for('main.ai_assistant', note_id=note_id))
     return render_template('AI Assistant.html', note=note, messages=messages)
