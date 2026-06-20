@@ -1,7 +1,7 @@
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
+{% with flashes = get_flashed_messages(with_categories=true) %}
+  {% if flashes %}
     <div class="flash-stack">
-      {% for category, message in messages %}
+      {% for category, message in flashes %}
         <div class="alert alert--{{ category }}" role="alert">{{ message }}</div>
       {% endfor %}
     </div>
@@ -9,6 +9,7 @@
 {% endwith %}
 
 <form method="post" action="{{ url_for('main.ai_assistant', note_id=note.id) }}">
+  {{ form.hidden_tag() }}
   <input name="message" type="text" placeholder="Type your message here..." />
   <button type="submit">Send</button>
 </form>
