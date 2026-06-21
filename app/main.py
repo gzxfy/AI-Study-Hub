@@ -2,11 +2,11 @@ from mailbox import Message
 from pyexpat.errors import messages
 
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
-from flask_wtf import csrf
 
 from app.services.ai_service import ask_ai
 import validation_helpers
 from .models import Conversation, Note, Topic, db, Message
+from . import csrf
 
 main_bp = Blueprint('main', __name__)
 
@@ -20,6 +20,7 @@ def home():
     return render_template('home.html', notes=notes, recent_notes=recent_notes, note_count=len(notes))
 
 # will add topics later
+@csrf.exempt  # Exempt the create route from CSRF protection
 @main_bp.route('/create', methods=['GET', 'POST'])
 def create():
     content = None  # Initialize content variable or any other logic needed before rendering the create page
@@ -52,6 +53,7 @@ def create():
         return redirect(url_for('main.home'))
     return render_template('create_note.html', content=content, title=title, topic_id=None)  # Render the create page for GET requests
 
+@csrf.exempt  # Exempt the view route from CSRF protection
 @main_bp.route('/view/<int:note_id>', methods=['GET'])
 def view_note(note_id):
     note = Note.query.get(note_id)
@@ -66,6 +68,7 @@ def view_note(note_id):
     
     return render_template('view_note.html', note=note)
 
+@csrf.exempt  # Exempt the delete route from CSRF protection
 @main_bp.route('/delete/<int:note_id>')
 def delete_note(note_id):
     note = Note.query.get(note_id)
@@ -80,6 +83,7 @@ def delete_note(note_id):
     flash('Note deleted successfully!', 'success')
     return redirect(url_for('main.home'))
 
+@csrf.exempt  # Exempt the edit route from CSRF protection
 @main_bp.route('/edit/<int:note_id>', methods=['GET', 'POST'])
 def edit_note(note_id):
     note = Note.query.get(note_id)
@@ -108,6 +112,7 @@ def edit_note(note_id):
         return redirect(url_for('main.view_note', note_id=note.id))
     return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
 
+@csrf.exempt  # Exempt the topic create route from CSRF protection
 @main_bp.route('/topic/create', methods=['GET', 'POST'])
 def topic_create():
     if request.method == 'POST':
@@ -132,6 +137,7 @@ def topic_create():
         return redirect(url_for('main.home'))
     return render_template('create_topic.html')  # Render the create topic page for GET requests
 
+@csrf.exempt  # Exempt the topic view route from CSRF protection
 @main_bp.route('/topic/<int:topic_id>')
 def topic_view(topic_id):
     topic = Topic.query.get_or_404(topic_id)
@@ -143,6 +149,7 @@ def topic_view(topic_id):
     return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
 
 #inspired and made with the help of ChatGPT
+@csrf.exempt  # Exempt the search route from CSRF protection
 @main_bp.route('/search')
 def search():
     search_query = request.args.get('q', '').strip()
@@ -189,7 +196,7 @@ def search():
         search_query=search_query,
         search_type=search_type
     )
-
+@csrf.exempt  # Exempt the AI assistant route from CSRF protection
 @main_bp.route('/chat/<int:note_id>', methods=['GET', 'POST'])
 def ai_assistant(note_id):
     note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
@@ -218,7 +225,7 @@ def ai_assistant(note_id):
             db.session.commit()
             
         return redirect(url_for('main.ai_assistant', note_id=note_id))
-    return render_template('AI Assistant.html', note=note, messages=messages)
+    return render_template('AI_Assistant.html', note=note, messages=messages)
 
 # @main_bp.route('/debug-notes')
 # def debug_notes():
