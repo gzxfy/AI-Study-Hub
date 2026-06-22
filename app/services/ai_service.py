@@ -3,7 +3,7 @@ import os
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def ask_ai(question, note_content):
     response = client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         messages=[
             {"role": "user", "content": question}
         ]
