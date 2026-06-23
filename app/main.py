@@ -1,4 +1,5 @@
 from mailbox import Message
+from pydoc_data.topics import topics
 from pyexpat.errors import messages
 
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
@@ -25,6 +26,12 @@ def home():
 def create():
     content = None  # Initialize content variable or any other logic needed before rendering the create page
     title = None  # Initialize title variable or any other logic needed before rendering the create page
+    user_id = session.get("user_id")  # Retrieve the user_id from the session
+    topic_id = request.args.get('topic_id')  # Get the topic_id from the query parameters, if provided
+
+    if not topic_id:
+        topic_id = None  # Set topic_id to None if not provided
+    topics = Topic.query.filter_by(user_id=user_id).all()
 
     if request.method == 'POST':
         # Add logic to handle form submission or data processing
@@ -43,7 +50,7 @@ def create():
             validation_helpers.validate_note_data(title, content)
         except ValueError as ve:
             flash(str(ve), 'danger')
-            return render_template('create_note.html', content=content, title=title)  # Render the create page with existing data on error
+            return render_template('create_note.html', content=content, title=title, topics=Topic.query.filter_by(user_id=user_id).all())  # Render the create page with existing data on error
         
 
         new_note = Note(user_id=user_id, title=title, content=content, topic_id=topic_id)
@@ -51,7 +58,7 @@ def create():
         db.session.commit()
         flash('Note created successfully!')  # Add a flash message to indicate successful creation
         return redirect(url_for('main.home'))
-    return render_template('create_note.html', content=content, title=title, topic_id=None)  # Render the create page for GET requests
+    return render_template('create_note.html', content=content, title=title, topic_id=None, topics=topics)  # Render the create page for GET requests
 
 @csrf.exempt  # Exempt the view route from CSRF protection
 @main_bp.route('/view/<int:note_id>', methods=['GET'])
@@ -69,7 +76,7 @@ def view_note(note_id):
     return render_template('view_note.html', note=note)
 
 @csrf.exempt  # Exempt the delete route from CSRF protection
-@main_bp.route('/delete/<int:note_id>')
+@main_bp.route('/delete_note/<int:note_id>')
 def delete_note(note_id):
     note = Note.query.get(note_id)
     if not note:
@@ -83,8 +90,23 @@ def delete_note(note_id):
     flash('Note deleted successfully!', 'success')
     return redirect(url_for('main.home'))
 
+@csrf.exempt  # Exempt the create route from CSRF protection
+@main_bp.route('/delete_topic/<int:topic_id>')
+def delete_topic(topic_id):
+    topic = Topic.query.get(topic_id)
+    if not topic:
+        flash('Topic not found!', 'danger')
+        return redirect(url_for('main.home'))
+    if topic.user_id != session.get("user_id"):
+        flash('You do not have permission to delete this topic!', 'danger')
+        return redirect(url_for('main.home'))
+    db.session.delete(topic)
+    db.session.commit()
+    flash('Topic deleted successfully!', 'success')
+    return redirect(url_for('main.home'))
+
 @csrf.exempt  # Exempt the edit route from CSRF protection
-@main_bp.route('/edit/<int:note_id>', methods=['GET', 'POST'])
+@main_bp.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
 def edit_note(note_id):
     note = Note.query.get(note_id)
 
@@ -112,10 +134,42 @@ def edit_note(note_id):
         return redirect(url_for('main.view_note', note_id=note.id))
     return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
 
+@csrf.exempt  # Exempt the edit note route from CSRF protection
+@main_bp.route('/edit_topic/<int:topic_id>', methods=['GET', 'POST'])
+def edit_topic(topic_id):
+    topic = Topic.query.get(topic_id)
+    if not topic:
+        flash('Topic not found!', 'danger')
+        return redirect(url_for('main.home'))
+    if topic.user_id != session.get("user_id"):
+        flash('You do not have permission to edit this topic!', 'danger')
+        return redirect(url_for('main.home'))
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        color = request.form.get('color')
+        try:
+            validation_helpers.validate_topic_data(title, description, color)
+        except ValueError as ve:
+            flash(str(ve), 'danger')
+            return render_template('edit_topic.html', topic=topic)  # Render the edit topic page with existing data on error
+        topic.title = title
+        topic.description = description
+        topic.color = color
+        db.session.commit()
+        flash('Topic updated successfully!', 'success')
+        return redirect(url_for('main.home'))
+    return render_template('edit_topic.html', topic=topic)  # Render the edit topic page for GET requests
+
 @csrf.exempt  # Exempt the topic create route from CSRF protection
 @main_bp.route('/topic/create', methods=['GET', 'POST'])
 def topic_create():
     if request.method == 'POST':
+        user_id = session.get("user_id")
+        if not user_id:
+            flash('You must be logged in to create a topic.', 'danger')
+            return redirect(url_for('main.home'))
+        
         title = request.form.get('title')
         description = request.form.get('description')
         color = request.form.get('color')
@@ -125,8 +179,9 @@ def topic_create():
         except ValueError as ve:
             flash(str(ve), 'danger')
             return render_template('create_topic.html', title=title, description=description, color=color)  # Render the create topic page with existing data on error
+        
         new_topic = Topic(
-            user_id=session.get("user_id"),
+            user_id=user_id,
             title=title,
             description=description,
             color=color
@@ -135,7 +190,7 @@ def topic_create():
         db.session.commit()
         flash('Topic created successfully!', 'success')
         return redirect(url_for('main.home'))
-    return render_template('create_topic.html')  # Render the create topic page for GET requests
+    return render_template('create_topic.html', title='', description='', color='')  # Render the create topic page for GET requests with empty fields
 
 @csrf.exempt  # Exempt the topic view route from CSRF protection
 @main_bp.route('/topic/<int:topic_id>')
