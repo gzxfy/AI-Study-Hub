@@ -43,6 +43,8 @@ class Note(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    conversation = db.relationship('Conversation', backref='note', cascade='all, delete-orphan', uselist=False)
+
     def __repr__(self):
         return f'<Note {self.title}>'
     
@@ -51,14 +53,13 @@ class Conversation(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    messages = db.relationship('Message', backref='conversation', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<Conversation {self.title} for Topic {self.topic_id}>'
+        return f'<Conversation {self.id} for Note {self.note_id}>'
     
 class Message(db.Model):
     __tablename__ = 'messages'

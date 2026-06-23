@@ -1,5 +1,13 @@
-from app.models import Note, Topic
+from email.message import Message
+from urllib import response
 
+from app.models import Conversation, Note, Topic, Message
+from app.services.ai_service import ask_ai
+from conftest import client
+
+def register_and_login(client, email='test@example.com', password='Password123!'):
+    client.post('/register', data={'email': email, 'password': password, 'confirm_password': password}, follow_redirects=True)
+    client.post('/login', data={'email': email, 'password': password}, follow_redirects=True)
 
 def test_creating_note(client):
     # Set the user_id in the session
@@ -77,10 +85,9 @@ def test_delete_note(client):
         session['user_id'] = 1
 
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.get('/delete/1', follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = client.get('/delete_note/1', follow_redirects=True)  # Assuming 1 is an existing note_id
     assert b'Note deleted successfully!' in response.data
     assert response.status_code == 200
-
     note = Note.query.get(1)
     assert note is None  # The note should be deleted and no longer exist in the database
 
@@ -89,7 +96,7 @@ def test_edit_note(client):
         session['user_id'] = 1
 
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.post('/edit/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = client.post('/edit_note/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
     assert b'Note updated successfully!' in response.data
     assert response.status_code == 200
 
@@ -109,7 +116,7 @@ def test_unauthorization_edit_note(client):
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.post('/edit/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
+    response = client.post('/edit_note/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
     assert b'You do not have permission to edit this note!' in response.data
     assert response.status_code == 200
 
@@ -120,7 +127,7 @@ def test_unauthorization_delete_note(client):
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.get('/delete/1', follow_redirects=True)
+    response = client.get('/delete_note/1', follow_redirects=True)
     assert b'You do not have permission to delete this note!' in response.data
     assert response.status_code == 200
 
@@ -201,7 +208,7 @@ def test_search_topics(client):
     assert b'Searchable Topic' in response.data  # Ensure the topic is found in the search results
     assert response.status_code == 200  # Ensure the search request was successful
 
-def test_test_search_no_results(client):
+def test_search_no_results(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
@@ -209,3 +216,80 @@ def test_test_search_no_results(client):
     response = client.get('/search?q=NonExistent&type=notes', follow_redirects=True)
     assert b'No results found' in response.data  # Ensure the no results message is shown
     assert response.status_code == 200  # Ensure the search request was successful
+
+def test_ai_chat_loads(client):
+    response = client.get('/chat/1', follow_redirects=True)
+    assert response.status_code == 200  # Ensure the AI chat page loads successfully
+
+def test_conversation_created(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    client.post('/create', data={'title': 'Searchable Note', 'content': 'This note can be searched.'}, follow_redirects=True)
+
+    # Access the AI chat for a note, which should create a conversation if it doesn't exist
+    response = client.get('/chat/1', follow_redirects=True)
+    assert response.status_code == 200  # Ensure the AI chat page loads successfully
+    assert Conversation.query.count() == 1  # Ensure a conversation was created for the note
+
+def test_message_being_saved(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    client.post('/create', data={'title': 'Message Test Note', 'content': 'This note is for testing messages.'}, follow_redirects=True)
+
+    # Access the AI chat for the note to create a conversation
+    client.get('/chat/1', follow_redirects=True)
+
+    # Send a message in the AI chat
+    client.post('/chat/1', data={'message': 'Hello AI!'}, follow_redirects=True)
+    note = Note.query.filter_by(id=1, user_id=1).first()  # Retrieve the note from the database
+    # Ensure the message was saved in the database
+    conversation = note.conversation
+    assert conversation is not None  # Ensure the conversation exists
+    assert Message.query.filter_by(conversation_id=conversation.id, content='Hello AI!').count() == 1  # Ensure the message was saved
+
+def test_topic_being_deleted(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    # Register and log in the user
+    register_and_login(client, email='test@example.com', password='Password123!')
+
+    response = client.post('/topic/create', data={'title': 'Deletable Topic', 'description': 'This topic will be deleted.'}, follow_redirects=True)
+    print(response.status_code)
+    print(response.data.decode())
+    with client.application.app_context():
+        topic = Topic.query.filter_by(user_id=1).first()  # Retrieve the topic from the database for the correct user
+        assert topic is not None  # Ensure the topic exists before attempting to delete
+        topic_id = topic.id  # Store the topic ID for deletion
+
+    assert response.status_code == 200  # Ensure the topic creation request was successful
+    assert topic.user_id == 1  # Ensure the topic belongs to the correct user before attempting to delete
+
+    client.get(f'/delete_topic/{topic_id}', follow_redirects=True)  # Use the stored topic ID for deletion
+    # Ensure the topic was deleted
+    with client.application.app_context():
+        topic = Topic.query.filter_by(id=topic_id, user_id=1).first()
+        assert topic is None  # Ensure the topic was deleted from the database
+
+def test_topic_being_edited(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+    # Register and log in the user
+    register_and_login(client, email='test@example.com', password='Password123!')
+
+    client.post('/topic/create', data={'title': 'Editable Topic', 'description': 'This topic will be edited.', 'color': '#ffffff'}, follow_redirects=True)
+    # Edit the topic
+    client.post('/edit_topic/1', data={'title': 'Edited Topic', 'description': 'This topic has been edited.', 'color': '#000000'}, follow_redirects=True)  # Assuming the topic ID is 1
+    # Ensure the topic was edited
+    topic = Topic.query.filter_by(id=1, user_id=1).first()
+    assert topic.title == 'Edited Topic'  # Ensure the title was updated
+    assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
+    assert topic.color == '#000000'  # Ensure the color was updated
+

@@ -7,3 +7,13 @@
     </ul>
   {% endif %}
 {% endwith %}
+
+<form method="POST" action="{{ url_for('main.topic_create') }}">
+  <label for="title">Title:</label>
+  <input type="text" id="title" name="title" required>
+  <label for="description">Description:</label>
+  <textarea id="description" name="description" required></textarea>
+  <label for="color">Color:</label>
+  <input type="color" id="color" name="color" required>
+  <button type="submit">Create Topic</button>
+</form>
