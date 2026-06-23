@@ -1,0 +1,22 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+<h1>{{ topic.title }}</h1>
+<p>{{ topic.description }}</p>
+
+{% if topic.notes %}
+  <h2>Notes</h2>
+  <ul>
+    {% for note in topic.notes %}
+      <li><a href="{{ url_for('main.view_note', note_id=note.id) }}">{{ note.title }}</a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No notes available for this topic.</p>
+{% endif %}
