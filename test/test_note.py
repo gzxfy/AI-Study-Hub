@@ -247,3 +247,34 @@ def test_message_being_saved(client):
     assert conversation is not None  # Ensure the conversation exists
     assert Message.query.filter_by(conversation_id=conversation.id, content='Hello AI!').count() == 1  # Ensure the message was saved
 
+def test_topic_being_deleted(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+        response = client.post('/create_topic', data={'title': 'Deletable Topic', 'description': 'This topic will be deleted.', 'color': '#ffffff'}, follow_redirects=True)
+        # Delete the topic
+        topic = Topic.query.filter_by(user_id=1).first()  # Retrieve the topic from the database for the correct user
+        assert response.status_code == 200  # Ensure the topic creation request was successful
+        assert topic is not None  # Ensure the topic exists before attempting to delete
+        assert topic.user_id == 1  # Ensure the topic belongs to the correct user before attempting to delete
+
+        client.get('/delete_topic/1', follow_redirects=True)  # Assuming the topic ID is 1
+        # Ensure the topic was deleted
+        topic = Topic.query.filter_by(id=1, user_id=1).first()
+        assert topic is None  # Ensure the topic was deleted from the database
+
+def test_topic_being_edited(client):
+    with client.session_transaction() as session:
+        session['user_id'] = 1  # Set the user_id for the session
+        session['username'] = 'testuser'  # Set a username for the session
+
+        client.post('/create_topic', data={'title': 'Editable Topic', 'description': 'This topic will be edited.', 'color': '#ffffff'}, follow_redirects=True)
+        # Edit the topic
+        client.post('/edit_topic/1', data={'title': 'Edited Topic', 'description': 'This topic has been edited.', 'color': '#000000'}, follow_redirects=True)  # Assuming the topic ID is 1
+        # Ensure the topic was edited
+        topic = Topic.query.filter_by(id=1, user_id=1).first()
+        assert topic.title == 'Edited Topic'  # Ensure the title was updated
+        assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
+        assert topic.color == '#000000'  # Ensure the color was updated
+
