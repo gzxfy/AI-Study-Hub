@@ -213,14 +213,23 @@ def ai_assistant(note_id):
 
     messages = conversation.messages
     if request.method == 'POST':
-        print("POST request received")
         question = request.form.get('message').strip()
 
         if question:
-            user_message = Message(conversation_id=conversation.id, role='user', content=question)
+            user_message = Message(
+                conversation_id=conversation.id, 
+                role='user',
+                content=question
+            )
+
             db.session.add(user_message)
-            ai_response = ask_ai(question, note_content=note.content)
+            db.session.flush()
+
+            conversation_messages = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.timestamp.asc()).all()
+
+            ai_response = ask_ai(question=question, note_content=note.content, conversation_messages=conversation_messages)
             assistant_message = Message(conversation_id=conversation.id, role='assistant', content=ai_response)
+            
             db.session.add(assistant_message)
             db.session.commit()
             

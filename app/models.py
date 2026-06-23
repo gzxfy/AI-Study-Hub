@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
 
     topics = db.relationship('Topic', backref='user', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='user', cascade="all, delete-orphan")
-    conversation = db.relationship('Conversation', backref='user', cascade="all, delete-orphan")
+    conversations = db.relationship('Conversation', backref='user', cascade="all, delete-orphan")
     progress = db.relationship('Progress', backref='user', cascade="all, delete-orphan")
 
     def __repr__(self):
