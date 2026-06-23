@@ -27,3 +27,13 @@ def test_ai_returns_text():
     assert response is not None
     assert isinstance(response, str)
     assert len(response) > 0
+
+def test_ai_remembers_previous_messages():
+    question1 = "What is AI?"
+    question2 = "Explain machine learning."
+    note_content = "AI stands for Artificial Intelligence."
+    response1 = ask_ai(question1, note_content=note_content, conversation_messages=[])
+    response2 = ask_ai(question2, note_content=note_content, conversation_messages=[Message(role='user', content=question1), Message(role='assistant', content=response1)])
+    assert response2 is not None
+    assert isinstance(response2, str)
+    assert len(response2) > 0
