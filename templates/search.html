@@ -9,7 +9,6 @@
 {% endwith %}
 
 <form method="GET" action="{{ url_for('main.search') }}">
-    {{ form.hidden_tag() }}
     <input
         type="text"
         name="q"
