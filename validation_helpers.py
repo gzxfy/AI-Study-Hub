@@ -1,4 +1,7 @@
+from functools import wraps
 import re
+
+from flask import flash, session, redirect, url_for
 
 # Validation helper functions for email and password
 def validate_email(email):
@@ -68,3 +71,12 @@ def validate_topic_data(title, description, color):
         raise ValueError("Description cannot be longer than 1000 characters.")
     # Additional validation can be added here, such as checking for prohibited words or formatting requirements
     return True
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("You must be logged in to access this page.", "danger")
+            return redirect(url_for('main.home'))  # Redirect to home page if user is not logged in
+        return f(*args, **kwargs)
+    return decorated_function

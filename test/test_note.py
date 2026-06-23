@@ -1,8 +1,13 @@
 from email.message import Message
+from urllib import response
 
 from app.models import Conversation, Note, Topic, Message
 from app.services.ai_service import ask_ai
+from conftest import client
 
+def register_and_login(client, email='test@example.com', password='Password123!'):
+    client.post('/register', data={'email': email, 'password': password, 'confirm_password': password}, follow_redirects=True)
+    client.post('/login', data={'email': email, 'password': password}, follow_redirects=True)
 
 def test_creating_note(client):
     # Set the user_id in the session
@@ -80,10 +85,9 @@ def test_delete_note(client):
         session['user_id'] = 1
 
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.get('/delete/1', follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = client.get('/delete_note/1', follow_redirects=True)  # Assuming 1 is an existing note_id
     assert b'Note deleted successfully!' in response.data
     assert response.status_code == 200
-
     note = Note.query.get(1)
     assert note is None  # The note should be deleted and no longer exist in the database
 
@@ -92,7 +96,7 @@ def test_edit_note(client):
         session['user_id'] = 1
 
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.post('/edit/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = client.post('/edit_note/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
     assert b'Note updated successfully!' in response.data
     assert response.status_code == 200
 
@@ -112,7 +116,7 @@ def test_unauthorization_edit_note(client):
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.post('/edit/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
+    response = client.post('/edit_note/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
     assert b'You do not have permission to edit this note!' in response.data
     assert response.status_code == 200
 
@@ -123,7 +127,7 @@ def test_unauthorization_delete_note(client):
     response = client.post('/create', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.get('/delete/1', follow_redirects=True)
+    response = client.get('/delete_note/1', follow_redirects=True)
     assert b'You do not have permission to delete this note!' in response.data
     assert response.status_code == 200
 
@@ -252,16 +256,24 @@ def test_topic_being_deleted(client):
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
 
-        response = client.post('/create_topic', data={'title': 'Deletable Topic', 'description': 'This topic will be deleted.', 'color': '#ffffff'}, follow_redirects=True)
-        # Delete the topic
-        topic = Topic.query.filter_by(user_id=1).first()  # Retrieve the topic from the database for the correct user
-        assert response.status_code == 200  # Ensure the topic creation request was successful
-        assert topic is not None  # Ensure the topic exists before attempting to delete
-        assert topic.user_id == 1  # Ensure the topic belongs to the correct user before attempting to delete
+    # Register and log in the user
+    register_and_login(client, email='test@example.com', password='Password123!')
 
-        client.get('/delete_topic/1', follow_redirects=True)  # Assuming the topic ID is 1
-        # Ensure the topic was deleted
-        topic = Topic.query.filter_by(id=1, user_id=1).first()
+    response = client.post('/topic/create', data={'title': 'Deletable Topic', 'description': 'This topic will be deleted.'}, follow_redirects=True)
+    print(response.status_code)
+    print(response.data.decode())
+    with client.application.app_context():
+        topic = Topic.query.filter_by(user_id=1).first()  # Retrieve the topic from the database for the correct user
+        assert topic is not None  # Ensure the topic exists before attempting to delete
+        topic_id = topic.id  # Store the topic ID for deletion
+
+    assert response.status_code == 200  # Ensure the topic creation request was successful
+    assert topic.user_id == 1  # Ensure the topic belongs to the correct user before attempting to delete
+
+    client.get(f'/delete_topic/{topic_id}', follow_redirects=True)  # Use the stored topic ID for deletion
+    # Ensure the topic was deleted
+    with client.application.app_context():
+        topic = Topic.query.filter_by(id=topic_id, user_id=1).first()
         assert topic is None  # Ensure the topic was deleted from the database
 
 def test_topic_being_edited(client):
@@ -269,12 +281,15 @@ def test_topic_being_edited(client):
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
 
-        client.post('/create_topic', data={'title': 'Editable Topic', 'description': 'This topic will be edited.', 'color': '#ffffff'}, follow_redirects=True)
-        # Edit the topic
-        client.post('/edit_topic/1', data={'title': 'Edited Topic', 'description': 'This topic has been edited.', 'color': '#000000'}, follow_redirects=True)  # Assuming the topic ID is 1
-        # Ensure the topic was edited
-        topic = Topic.query.filter_by(id=1, user_id=1).first()
-        assert topic.title == 'Edited Topic'  # Ensure the title was updated
-        assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
-        assert topic.color == '#000000'  # Ensure the color was updated
+    # Register and log in the user
+    register_and_login(client, email='test@example.com', password='Password123!')
+
+    client.post('/topic/create', data={'title': 'Editable Topic', 'description': 'This topic will be edited.', 'color': '#ffffff'}, follow_redirects=True)
+    # Edit the topic
+    client.post('/edit_topic/1', data={'title': 'Edited Topic', 'description': 'This topic has been edited.', 'color': '#000000'}, follow_redirects=True)  # Assuming the topic ID is 1
+    # Ensure the topic was edited
+    topic = Topic.query.filter_by(id=1, user_id=1).first()
+    assert topic.title == 'Edited Topic'  # Ensure the title was updated
+    assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
+    assert topic.color == '#000000'  # Ensure the color was updated
 

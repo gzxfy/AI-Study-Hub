@@ -6,6 +6,7 @@ from flask import flash, redirect, render_template, Blueprint, request, session,
 
 from app.services.ai_service import ask_ai
 import validation_helpers
+from validation_helpers import login_required
 from .models import Conversation, Note, Topic, db, Message
 from . import csrf
 
@@ -20,9 +21,9 @@ def home():
     recent_notes = sorted(notes, key=lambda x: x.id, reverse=True)[:5]  # Get the 5 most recent notes
     return render_template('home.html', notes=notes, recent_notes=recent_notes, note_count=len(notes))
 
-# will add topics later
-@csrf.exempt  # Exempt the create route from CSRF protection
 @main_bp.route('/create', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt the create route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the create route
 def create():
     content = None  # Initialize content variable or any other logic needed before rendering the create page
     title = None  # Initialize title variable or any other logic needed before rendering the create page
@@ -34,11 +35,6 @@ def create():
     topics = Topic.query.filter_by(user_id=user_id).all()
 
     if request.method == 'POST':
-        # Add logic to handle form submission or data processing
-        user_id = session.get("user_id")  # Retrieve the user_id from the session
-        if not user_id:
-            flash('User not logged in!')
-            return redirect(url_for('main.home'))
         
         content = request.form.get('content', '')
         title = request.form.get('title', '')
@@ -60,8 +56,9 @@ def create():
         return redirect(url_for('main.home'))
     return render_template('create_note.html', content=content, title=title, topic_id=None, topics=topics)  # Render the create page for GET requests
 
-@csrf.exempt  # Exempt the view route from CSRF protection
 @main_bp.route('/view/<int:note_id>', methods=['GET'])
+@csrf.exempt  # Exempt the view route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the view note route
 def view_note(note_id):
     note = Note.query.get(note_id)
 
@@ -75,8 +72,9 @@ def view_note(note_id):
     
     return render_template('view_note.html', note=note)
 
-@csrf.exempt  # Exempt the delete route from CSRF protection
 @main_bp.route('/delete_note/<int:note_id>')
+@csrf.exempt  # Exempt the delete route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the delete note route
 def delete_note(note_id):
     note = Note.query.get(note_id)
     if not note:
@@ -85,28 +83,33 @@ def delete_note(note_id):
     if note.user_id != session.get("user_id"):
         flash('You do not have permission to delete this note!', 'danger')
         return redirect(url_for('main.home'))
+    
     db.session.delete(note)
     db.session.commit()
     flash('Note deleted successfully!', 'success')
     return redirect(url_for('main.home'))
 
-@csrf.exempt  # Exempt the create route from CSRF protection
 @main_bp.route('/delete_topic/<int:topic_id>')
+@csrf.exempt  # Exempt the create route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the delete topic route
 def delete_topic(topic_id):
-    topic = Topic.query.get(topic_id)
+    topic = Topic.query.get_or_404(topic_id)
     if not topic:
         flash('Topic not found!', 'danger')
         return redirect(url_for('main.home'))
+    
     if topic.user_id != session.get("user_id"):
         flash('You do not have permission to delete this topic!', 'danger')
         return redirect(url_for('main.home'))
+    
     db.session.delete(topic)
     db.session.commit()
     flash('Topic deleted successfully!', 'success')
     return redirect(url_for('main.home'))
 
-@csrf.exempt  # Exempt the edit route from CSRF protection
 @main_bp.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt the edit route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the edit route
 def edit_note(note_id):
     note = Note.query.get(note_id)
 
@@ -134,8 +137,9 @@ def edit_note(note_id):
         return redirect(url_for('main.view_note', note_id=note.id))
     return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
 
-@csrf.exempt  # Exempt the edit note route from CSRF protection
 @main_bp.route('/edit_topic/<int:topic_id>', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt the edit note route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the edit note route
 def edit_topic(topic_id):
     topic = Topic.query.get(topic_id)
     if not topic:
@@ -161,15 +165,12 @@ def edit_topic(topic_id):
         return redirect(url_for('main.home'))
     return render_template('edit_topic.html', topic=topic)  # Render the edit topic page for GET requests
 
-@csrf.exempt  # Exempt the topic create route from CSRF protection
 @main_bp.route('/topic/create', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt the topic create route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the topic create route
 def topic_create():
     if request.method == 'POST':
-        user_id = session.get("user_id")
-        if not user_id:
-            flash('You must be logged in to create a topic.', 'danger')
-            return redirect(url_for('main.home'))
-        
+        user_id = session.get("user_id")  # Retrieve the user_id from the session
         title = request.form.get('title')
         description = request.form.get('description')
         color = request.form.get('color')
@@ -192,8 +193,9 @@ def topic_create():
         return redirect(url_for('main.home'))
     return render_template('create_topic.html', title='', description='', color='')  # Render the create topic page for GET requests with empty fields
 
-@csrf.exempt  # Exempt the topic view route from CSRF protection
 @main_bp.route('/topic/<int:topic_id>')
+@csrf.exempt  # Exempt the topic view route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the topic view route
 def topic_view(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     if topic.user_id != session.get("user_id"):
@@ -204,8 +206,9 @@ def topic_view(topic_id):
     return render_template('view_topic.html', topic=topic, notes=notes)  # Render the view topic page with associated notes
 
 #inspired and made with the help of ChatGPT
-@csrf.exempt  # Exempt the search route from CSRF protection
 @main_bp.route('/search')
+@csrf.exempt  # Exempt the search route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the search route
 def search():
     search_query = request.args.get('q', '').strip()
     search_type = request.args.get('type', 'all').strip()
@@ -251,8 +254,11 @@ def search():
         search_query=search_query,
         search_type=search_type
     )
-@csrf.exempt  # Exempt the AI assistant route from CSRF protection
+
+
 @main_bp.route('/chat/<int:note_id>', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt the AI assistant route from CSRF protection
+@login_required  # Ensure the user is logged in before accessing the AI assistant route
 def ai_assistant(note_id):
     note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
 
@@ -291,80 +297,3 @@ def ai_assistant(note_id):
         return redirect(url_for('main.ai_assistant', note_id=note_id))
     return render_template('AI_Assistant.html', note=note, messages=messages)
 
-# @main_bp.route('/debug-notes')
-# def debug_notes():
-
-#     notes = Note.query.all()
-
-#     return {
-#         "count": len(notes),
-#         "notes": [
-#             {
-#                 "id": note.id,
-#                 "user_id": note.user_id,
-#                 "title": note.title
-#             }
-#             for note in notes
-#         ]
-#     }
-
-# @main_bp.route('/debug-session')
-# def debug_session():
-#     return {
-#         "user_id": session.get("user_id"),
-#         "username": session.get("username")
-#     }
-
-
-
-# @main_bp.route('/debug-ai', methods=['GET', 'POST'])
-# @csrf.exempt
-# def debug_ai():
-    
-#     answer = None
-
-#     if request.method == 'POST':
-#         question = request.form.get('message')
-
-#         answer = ask_ai(
-#             question,
-#             note_content="Binary search repeatedly divides a sorted array."
-#         )
-
-#     return render_template(
-#         'debug_ai.html',
-#         answer=answer
-#     )
-
-# @main_bp.route('/debug-ai', methods=['GET', 'POST'])
-# @csrf.exempt
-# def create():
-#     content = None  # Initialize content variable or any other logic needed before rendering the create page
-#     title = None  # Initialize title variable or any other logic needed before rendering the create page
-
-#     if request.method == 'POST':
-#     # Add logic to handle form submission or data processing
-#         user_id = session.get("user_id")  # Retrieve the user_id from the session
-#         if not user_id:
-#             flash('User not logged in!')
-#             return redirect(url_for('main.home'))
-        
-#         content = request.form.get('content', '')
-#         title = request.form.get('title', '')
-#         topic_id = request.form.get('topic_id')  # Get the topic_id from the form, if provided
-#         if not topic_id:
-#             topic_id = None  # Convert the topic_id to an integer if provided
-
-#         try:
-#             validation_helpers.validate_note_data(title, content)
-#         except ValueError as ve:
-#             flash(str(ve), 'danger')
-#             return render_template('create_note.html', content=content, title=title)  # Render the create page with existing data on error
-        
-
-#         new_note = Note(user_id=user_id, title=title, content=content, topic_id=topic_id)
-#         db.session.add(new_note)
-#         db.session.commit()
-#         flash('Note created successfully!')  # Add a flash message to indicate successful creation
-#         return redirect(url_for('main.home'))
-#     return render_template('create_note.html', content=content, title=title)  # Render the create page for GET requests
