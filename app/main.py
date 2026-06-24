@@ -5,9 +5,9 @@ from pyexpat.errors import messages
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
 from app.services.ai_service import ask_ai
-import validation_helpers
-from validation_helpers import login_required
-from .models import Conversation, Note, Topic, db, Message
+import app.utils.validation_helpers as validation_helpers
+from app.utils.validation_helpers import login_required
+from .models.models import Conversation, Note, Topic, db, Message
 from . import csrf
 
 main_bp = Blueprint('main', __name__)

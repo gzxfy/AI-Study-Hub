@@ -1,4 +1,4 @@
-from app.models import Conversation, Message
+from app.models.models import Conversation, Message
 from app.services.ai_service import ask_ai
 
 

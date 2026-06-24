@@ -22,8 +22,8 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
-    from . import models
-    from .auth import auth_bp
+    from .models import models
+    from .routes.auth import auth_bp
     from .main import main_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)

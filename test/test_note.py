@@ -1,7 +1,7 @@
 from email.message import Message
 from urllib import response
 
-from app.models import Conversation, Note, Topic, Message
+from app.models.models import Conversation, Note, Topic, Message
 from app.services.ai_service import ask_ai
 from conftest import client
 
