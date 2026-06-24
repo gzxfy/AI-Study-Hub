@@ -1,7 +1,5 @@
 from flask import Blueprint, render_template, redirect, request, session, url_for, flash, current_app
-from werkzeug.security import generate_password_hash, check_password_hash
 from ..models.models import User, db
-import app.utils.validation_helpers as validation_helpers
 import app.services.auth_service as auth_service
 
 auth_bp = Blueprint('auth', __name__)
@@ -33,26 +31,15 @@ def register():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    error = None
-    success = None
-    email = None
-    password = None
-
+    email = ""
+    password = ""
+    
     if request.method == 'POST':
-        email = (request.form.get('email') or '').strip().lower()
-        password = request.form.get('password') or ''
-
         try:
-            if not email:
-                raise ValueError('Email is required.')
-            if not password:
-                raise ValueError('Password is required.')
-
-            validation_helpers.validate_email_and_password(email, password)
-
-            user = User.query.filter_by(email=email).first()
-            if not user or not check_password_hash(user.password_hash, password):
-                raise ValueError('Invalid email or password.')
+            user = auth_service.login_user(
+                email=(request.form.get('email') or '').strip().lower(),
+                password=request.form.get('password') or ''
+            )
             
             session.clear()
             session['user_id'] = user.id
@@ -68,7 +55,7 @@ def login():
             flash('An unexpected error occurred. Please try again later.', 'danger')
             password = ''  # Clear password field on error
             email = ''  # Clear email field on error
-    return render_template('login.html', email=email, password=password, error=error, success=success)
+    return render_template('login.html', email=email, password=password)
 
 
 @auth_bp.route('/logout')

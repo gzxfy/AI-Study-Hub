@@ -42,7 +42,7 @@ def validate_email_and_password(email, password):
     validate_password(password)
     return True
 
-def validate_user_data(username, email, password, confirm_password):
+def validate_user_data_for_registration(username, email, password, confirm_password):
     username = (username or "").strip()
     email = (email or "").strip()
     validate_username(username)
@@ -52,13 +52,21 @@ def validate_user_data(username, email, password, confirm_password):
         raise ValueError("Passwords do not match.")
     return True
 
+def validate_user_data_for_login(email, password):
+    email = (email or "").strip()
+    validate_email(email)
+    validate_password(password)
+    return True
+
 def validate_if_username_or_email_exists(username, email):
     username = (username or "").strip()
     email = (email or "").strip()
     if User.query.filter_by(username=username).first():
         raise ValueError("Username is already taken.")
+    
     if User.query.filter_by(email=email).first():
-        raise ValueError("Email is already registered.")
+        raise ValueError("Email already registered.")
+    
     return True
 
 # Will most likely be changed to use a more robust validation library in the future, and for better error handling and user feedback, but this is a simple validation function for now.
