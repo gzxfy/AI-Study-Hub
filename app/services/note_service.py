@@ -12,7 +12,7 @@ def create_note(user_id, title, content, topic_id):
 def view_note(note_id, user_id):
     note = Note.query.get(note_id)
     if not note:
-        raise ValueError("Note not found.")
+        raise ValueError("Note not found!")
     if note.user_id != user_id:
         raise ValueError("You do not have permission to view this note.")
     return note
