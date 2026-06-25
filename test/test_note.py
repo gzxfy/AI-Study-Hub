@@ -4,6 +4,7 @@ from urllib import response
 from app.models.models import Conversation, Note, Topic, Message
 from app.services.ai_service import ask_ai
 from conftest import client
+import app.services.note_service as note_service
 
 def register_and_login(client, email='test@example.com', password='Password123!'):
     client.post('/register', data={'email': email, 'password': password, 'confirm_password': password}, follow_redirects=True)
@@ -67,8 +68,8 @@ def test_view_note_not_found(client):
         session['user_id'] = 1
 
     response = client.get('/view/9999', follow_redirects=True)  # Assuming 9999 is a non-existent note_id
-    assert b'Note not found!' in response.data
     assert response.status_code == 200
+    assert b'Note not found!' in response.data
 
 def test_view_note(client):
     with client.session_transaction() as session:
