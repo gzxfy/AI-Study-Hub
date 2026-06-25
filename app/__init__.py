@@ -25,8 +25,10 @@ def create_app(test_config=None):
     from .models import models
     from .routes.auth import auth_bp
     from .main import main_bp
+    from .routes.note import note_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(note_bp)
 
     @login_manager.user_loader
     def load_user(user_id):
