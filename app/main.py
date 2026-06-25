@@ -21,73 +21,6 @@ def home():
     recent_notes = sorted(notes, key=lambda x: x.id, reverse=True)[:5]  # Get the 5 most recent notes
     return render_template('home.html', notes=notes, recent_notes=recent_notes, note_count=len(notes))
 
-@main_bp.route('/create', methods=['GET', 'POST'])
-@csrf.exempt  # Exempt the create route from CSRF protection
-@login_required  # Ensure the user is logged in before accessing the create route
-def create():
-    content = None  # Initialize content variable or any other logic needed before rendering the create page
-    title = None  # Initialize title variable or any other logic needed before rendering the create page
-    user_id = session.get("user_id")  # Retrieve the user_id from the session
-    topic_id = request.args.get('topic_id')  # Get the topic_id from the query parameters, if provided
-
-    if not topic_id:
-        topic_id = None  # Set topic_id to None if not provided
-    topics = Topic.query.filter_by(user_id=user_id).all()
-
-    if request.method == 'POST':
-        
-        content = request.form.get('content', '')
-        title = request.form.get('title', '')
-        topic_id = request.form.get('topic_id')  # Get the topic_id from the form, if provided
-        if not topic_id:
-            topic_id = None  # Convert the topic_id to an integer if provided
-
-        try:
-            validation_helpers.validate_note_data(title, content)
-        except ValueError as ve:
-            flash(str(ve), 'danger')
-            return render_template('create_note.html', content=content, title=title, topics=Topic.query.filter_by(user_id=user_id).all())  # Render the create page with existing data on error
-        
-
-        new_note = Note(user_id=user_id, title=title, content=content, topic_id=topic_id)
-        db.session.add(new_note)
-        db.session.commit()
-        flash('Note created successfully!')  # Add a flash message to indicate successful creation
-        return redirect(url_for('main.home'))
-    return render_template('create_note.html', content=content, title=title, topic_id=None, topics=topics)  # Render the create page for GET requests
-
-@main_bp.route('/view/<int:note_id>', methods=['GET'])
-@csrf.exempt  # Exempt the view route from CSRF protection
-@login_required  # Ensure the user is logged in before accessing the view note route
-def view_note(note_id):
-    note = Note.query.get(note_id)
-
-    if not note:
-        flash('Note not found!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    if note.user_id != session.get("user_id"):
-        flash('You do not have permission to view this note!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    return render_template('view_note.html', note=note)
-
-@main_bp.route('/delete_note/<int:note_id>')
-@csrf.exempt  # Exempt the delete route from CSRF protection
-@login_required  # Ensure the user is logged in before accessing the delete note route
-def delete_note(note_id):
-    note = Note.query.get(note_id)
-    if not note:
-        flash('Note not found!', 'danger')
-        return redirect(url_for('main.home'))
-    if note.user_id != session.get("user_id"):
-        flash('You do not have permission to delete this note!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    db.session.delete(note)
-    db.session.commit()
-    flash('Note deleted successfully!', 'success')
-    return redirect(url_for('main.home'))
 
 @main_bp.route('/delete_topic/<int:topic_id>')
 @csrf.exempt  # Exempt the create route from CSRF protection
@@ -107,35 +40,7 @@ def delete_topic(topic_id):
     flash('Topic deleted successfully!', 'success')
     return redirect(url_for('main.home'))
 
-@main_bp.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
-@csrf.exempt  # Exempt the edit route from CSRF protection
-@login_required  # Ensure the user is logged in before accessing the edit route
-def edit_note(note_id):
-    note = Note.query.get(note_id)
 
-    if not note:
-        flash('Note not found!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    if note.user_id != session.get("user_id"):
-        flash('You do not have permission to edit this note!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    if request.method == 'POST':
-        title = request.form.get('title')
-        content = request.form.get('content')
-        try:
-            validation_helpers.validate_note_data(title, content)
-        except ValueError as ve:
-            flash(str(ve), 'danger')
-            return render_template('edit_note.html', note=note)  # Render the edit page with existing data on error
-        
-        note.title = title
-        note.content = content
-        db.session.commit()
-        flash('Note updated successfully!', 'success')
-        return redirect(url_for('main.view_note', note_id=note.id))
-    return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
 
 @main_bp.route('/edit_topic/<int:topic_id>', methods=['GET', 'POST'])
 @csrf.exempt  # Exempt the edit note route from CSRF protection
