@@ -1,6 +1,5 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
 from app.models.models import Note, Topic
-import app.utils.validation_helpers as validation_helpers
 from app.utils.validation_helpers import login_required
 import app.services.note_service as note_service
 from app import csrf

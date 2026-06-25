@@ -48,7 +48,7 @@
 <h2>Topics</h2>
 
 {% for topic in topic_results %}
-    <a href="{{ url_for('main.topic_view', topic_id=topic.id) }}">
+    <a href="{{ url_for('topic.topic_view', topic_id=topic.id) }}">
         {{ topic.title }}
     </a>
 {% endfor %}

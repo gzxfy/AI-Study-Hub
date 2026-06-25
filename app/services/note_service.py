@@ -1,5 +1,5 @@
 from app import db
-from app.models.models import User, Conversation, Note, Topic, db, Message
+from app.models.models import Note, db
 import app.utils.validation_helpers as validation_helpers
 
 def create_note(user_id, title, content, topic_id):
