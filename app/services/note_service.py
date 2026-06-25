@@ -14,5 +14,26 @@ def view_note(note_id, user_id):
     if not note:
         raise ValueError("Note not found!")
     if note.user_id != user_id:
-        raise ValueError("You do not have permission to view this note.")
+        raise ValueError("You do not have permission to view this note!")
+    return note
+
+def delete_note(note_id, user_id):
+    note = Note.query.get(note_id)
+    if not note:
+        raise ValueError("Note not found!")
+    if note.user_id != user_id:
+        raise ValueError("You do not have permission to delete this note!")
+    db.session.delete(note)
+    db.session.commit()
+
+def edit_note(note_id, user_id, title, content):
+    note = Note.query.get(note_id)
+    if not note:
+        raise ValueError("Note not found!")
+    if note.user_id != user_id:
+        raise ValueError("You do not have permission to edit this note!")
+    validation_helpers.validate_note_data(title, content)
+    note.title = title
+    note.content = content
+    db.session.commit()
     return note
