@@ -50,45 +50,28 @@ def view_note(note_id):
 @csrf.exempt  # Exempt the delete route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the delete note route
 def delete_note(note_id):
-    note = Note.query.get(note_id)
-    if not note:
-        flash('Note not found!', 'danger')
-        return redirect(url_for('main.home'))
-    if note.user_id != session.get("user_id"):
-        flash('You do not have permission to delete this note!', 'danger')
-        return redirect(url_for('main.home'))
     
-    db.session.delete(note)
-    db.session.commit()
-    flash('Note deleted successfully!', 'success')
+    try:
+        note_service.delete_note(note_id, session.get("user_id"))
+        flash('Note deleted successfully!', 'success')
+    except ValueError as ve:
+        flash(str(ve), 'danger')
     return redirect(url_for('main.home'))
 
 @note_bp.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
 @csrf.exempt  # Exempt the edit route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the edit route
 def edit_note(note_id):
-    note = Note.query.get(note_id)
-
-    if not note:
-        flash('Note not found!', 'danger')
-        return redirect(url_for('main.home'))
-    
-    if note.user_id != session.get("user_id"):
-        flash('You do not have permission to edit this note!', 'danger')
-        return redirect(url_for('main.home'))
-    
     if request.method == 'POST':
-        title = request.form.get('title')
-        content = request.form.get('content')
         try:
-            validation_helpers.validate_note_data(title, content)
+            new_note = note_service.edit_note(
+                note_id=note_id,
+                user_id=session.get("user_id"),
+                title=request.form.get('title', ''),
+                content=request.form.get('content', '')
+            )
+            flash('Note updated successfully!', 'success')
+            return redirect(url_for('note.view_note', note_id=new_note.id))
         except ValueError as ve:
             flash(str(ve), 'danger')
-            return render_template('edit_note.html', note=note)  # Render the edit page with existing data on error
-        
-        note.title = title
-        note.content = content
-        db.session.commit()
-        flash('Note updated successfully!', 'success')
-        return redirect(url_for('main.view_note', note_id=note.id))
-    return render_template('edit_note.html', note=note)  # Render the edit page for GET requests
+    return render_template('edit_note.html', note=Note.query.get(note_id))  # Render the edit page for GET requests

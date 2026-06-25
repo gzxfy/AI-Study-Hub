@@ -14,7 +14,7 @@
   <h2>Notes</h2>
   <ul>
     {% for note in topic.notes %}
-      <li><a href="{{ url_for('main.view_note', note_id=note.id) }}">{{ note.title }}</a></li>
+      <li><a href="{{ url_for('note.view_note', note_id=note.id) }}">{{ note.title }}</a></li>
     {% endfor %}
   </ul>
 {% else %}

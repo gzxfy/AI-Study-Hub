@@ -113,4 +113,4 @@ def test_empty_password_login(client):
     }, follow_redirects=True)
 
     assert response.status_code == 200
-    assert b'Password is required.' in response.data
+    assert b'Invalid email or password.' in response.data

@@ -58,7 +58,7 @@
 <h2>Notes</h2>
 
 {% for note in note_results %}
-    <a href="{{ url_for('main.view_note', note_id=note.id) }}">
+    <a href="{{ url_for('note.view_note', note_id=note.id) }}">
         {{ note.title }}
     </a>
 {% endfor %}

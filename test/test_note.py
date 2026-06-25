@@ -115,6 +115,7 @@ def test_unauthorization_edit_note(client):
         session['user_id'] = 1
 
     response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
     response = client.post('/edit_note/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
