@@ -27,10 +27,12 @@ def create_app(test_config=None):
     from .main import main_bp
     from .routes.note import note_bp
     from .routes.topics import topic_bp
+    from .routes.ai_assisstant import ai_assisstant_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(note_bp)
     app.register_blueprint(topic_bp)
+    app.register_blueprint(ai_assisstant_bp)
 
     @login_manager.user_loader
     def load_user(user_id):
