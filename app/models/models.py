@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     notes = db.relationship('Note', backref='user', cascade="all, delete-orphan")
     conversations = db.relationship('Conversation', backref='user', cascade="all, delete-orphan")
     progress = db.relationship('Progress', backref='user', cascade="all, delete-orphan")
+    flashcards = db.relationship('Flashcard', backref='user', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -28,6 +29,7 @@ class Topic(db.Model):
 
     notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
     progress = db.relationship('Progress', backref='topic', cascade="all, delete-orphan")
+    flashcards = db.relationship('Flashcard', backref='topic', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<Topic {self.title}>'
@@ -44,6 +46,7 @@ class Note(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     conversation = db.relationship('Conversation', backref='note', cascade='all, delete-orphan', uselist=False)
+    flashcards = db.relationship('Flashcard', backref='note', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<Note {self.title}>'
@@ -85,3 +88,18 @@ class Progress(db.Model):
 
     def __repr__(self):
         return f'<Progress {self.notes_count} notes for Topic {self.topic_id}>'
+    
+class Flashcard(db.Model):
+    __tablename__ = 'flashcards'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+    difficulty = db.Column(db.String(50), nullable=True)  # e.g., 'easy', 'medium', 'hard'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Flashcard {self.question[:20]}... Difficulty: {self.difficulty}>'
