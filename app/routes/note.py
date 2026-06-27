@@ -17,7 +17,6 @@ def create_note():
         topic_id = request.form.get('topic_id')  # Get the topic_id from the form, if provided
         if not topic_id:
             topic_id = None  # Set topic_id to None if not provided
-        print("User ID:", user_id)  # Debugging: Print the user_id
         try:
             note_service.create_note(
                 user_id=user_id, 

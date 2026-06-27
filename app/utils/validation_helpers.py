@@ -109,6 +109,19 @@ def validate_topic_data(title, description, color):
     # Additional validation can be added here, such as checking for prohibited words or formatting requirements
     return True
 
+def validate_flashcard_data(question, answer, difficulty=None):
+    if not question or question.strip() == "":
+        raise ValueError("Question is required.")
+    if not answer or answer.strip() == "":
+        raise ValueError("Answer is required.")
+    if difficulty and difficulty not in ('easy', 'medium', 'hard'):
+        raise ValueError("Difficulty must be 'easy', 'medium', or 'hard' if provided.")
+    if len(question) > 500:
+        raise ValueError("Question cannot be longer than 500 characters.")
+    if len(answer) > 2000:
+        raise ValueError("Answer cannot be longer than 2000 characters.")
+    return True
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
