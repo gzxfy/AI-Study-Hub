@@ -28,3 +28,21 @@ def create_flashcard():
         except ValueError as ve:
             flash(str(ve), 'danger')
     return render_template('create_flashcard.html', note_id=request.form.get('note_id', ''), topic_id=topic_id, question=request.form.get('question', ''), answer=request.form.get('answer', ''), difficulty=request.form.get('difficulty', '' ))  # Render the flashcard creation template
+
+
+@flashcard_bp.route('/flashcard/<int:flashcard_id>', methods=['GET'])
+@login_required
+def view_flashcard(flashcard_id):
+    user_id = session.get('user_id')  # Get the logged-in user's ID
+    flashcard = flashcard_service.get_flashcard_by_id(flashcard_id, user_id=user_id)
+    if not flashcard or flashcard.user_id != user_id:
+        flash('Flashcard not found.', 'danger')
+        return redirect(url_for('main.home'))
+    return render_template('view_flashcard.html', flashcard=flashcard)
+
+@flashcard_bp.route('/flashcards', methods=['GET'])
+@login_required
+def view_all_flashcards():
+    user_id = session.get('user_id')  # Get the logged-in user's ID
+    flashcards = flashcard_service.get_all_flashcards(user_id)  # Get flashcards only for the logged-in user
+    return render_template('view_all_flashcards.html', flashcards=flashcards)

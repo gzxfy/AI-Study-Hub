@@ -123,3 +123,52 @@ def test_create_flashcard_answer_too_long(client):
     long_answer = 'A' * 2001  # Assuming the answer has a max length of 2000 characters
     response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Answer Too Long', answer=long_answer, difficulty='easy')
     assert b'Answer cannot be longer than 2000 characters.' in response.data  # Assuming the flashcard creation route validates answer length and flashes this message
+
+
+def test_view_flashcard_by_id(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note View Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question View Flashcard', answer='Sample Answer View Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.get(f'/flashcard/{flashcard_id}')
+    assert b'Sample Question View Flashcard' in response.data
+    assert b'Sample Answer View Flashcard' in response.data
+
+def test_view_all_flashcards(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note View All Flashcards', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question View All Flashcards', answer='Sample Answer View All Flashcards', difficulty='easy')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Another Sample Question View All Flashcards', answer='Another Sample Answer View All Flashcards', difficulty='easy')
+    response = client.get('/flashcards')
+    assert b"All Flashcards" in response.data  # Assuming the view_all_flashcards.html displays "All Flashcards" as a heading
+    assert b'Sample Question View All Flashcards' in response.data
+    assert b'Another Sample Question View All Flashcards' in response.data
+
+def test_view_all_flashcards_no_flashcards(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = client.get('/flashcards')
+    assert b"All Flashcards" in response.data  # Assuming the view_all_flashcards.html displays "All Flashcards" as a heading
+    assert b'No flashcards available.' in response.data  # Assuming the view_all_flashcards.html displays this message when there are no flashcards
+
+def test_view_flashcard_not_found(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    flashcard_id = 999  # Assuming this ID does not exist
+    response = client.get(f'/flashcard/{flashcard_id}', follow_redirects=True)
+    assert b'Flashcard not found.' in response.data  # Assuming the view_flashcard route flashes this message when the flashcard is not found
+    assert response.status_code == 200  # Assuming the follow_redirects=True results in a 200 status code after redirection
