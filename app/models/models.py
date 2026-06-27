@@ -94,7 +94,8 @@ class Flashcard(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
     question = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=False)
     difficulty = db.Column(db.String(50), nullable=True)  # e.g., 'easy', 'medium', 'hard'
