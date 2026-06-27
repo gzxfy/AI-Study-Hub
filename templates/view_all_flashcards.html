@@ -1,0 +1,21 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+<h1>All Flashcards</h1>
+<ul>
+    {% if flashcards %}
+      {% for flashcard in flashcards %}
+        <li>
+          <a href="{{ url_for('flashcard.view_flashcard', flashcard_id=flashcard.id) }}">{{ flashcard.question }}</a>
+        </li>
+      {% endfor %}
+    {% else %}
+      <li>No flashcards available.</li>
+    {% endif %}
+</ul>
