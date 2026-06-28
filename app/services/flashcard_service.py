@@ -20,13 +20,23 @@ def get_all_flashcards(user_id):
 def edit_flashcard(flashcard_id, user_id, question=None, answer=None, difficulty=None):
     flashcard = get_flashcard_by_id(flashcard_id, user_id)
     if not flashcard:
-        return None
-    if question is not None:
+        raise ValueError("Flashcard not found.")
+    if flashcard.user_id != user_id:
+        raise ValueError("You do not have permission to edit this flashcard.")
+    if question is not None and answer is not None and difficulty is not None:
         flashcard.question = question
-    if answer is not None:
         flashcard.answer = answer
-    if difficulty is not None:
         flashcard.difficulty = difficulty
     validation_helpers.validate_flashcard_data(flashcard.question, flashcard.answer, flashcard.difficulty)
+    db.session.commit()
+    return flashcard
+
+def delete_flashcard(flashcard_id, user_id):
+    flashcard = get_flashcard_by_id(flashcard_id, user_id)
+    if not flashcard:
+        raise ValueError("Flashcard not found.")
+    if flashcard.user_id != user_id:
+        raise ValueError("You do not have permission to delete this flashcard.")
+    db.session.delete(flashcard)
     db.session.commit()
     return flashcard

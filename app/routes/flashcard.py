@@ -70,3 +70,16 @@ def edit_flashcard(flashcard_id):
         except ValueError as ve:
             flash(str(ve), 'danger')
     return render_template('edit_flashcard.html', flashcard=flashcard)
+
+
+@flashcard_bp.route('/deleteFlashcard/<int:flashcard_id>', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_flashcard(flashcard_id):
+    user_id = session.get('user_id')  # Get the logged-in user's ID
+    try:
+        flashcard_service.delete_flashcard(flashcard_id, user_id)
+        flash('Flashcard deleted successfully!', 'success')
+    except ValueError as ve:
+        flash(str(ve), 'danger')
+    return redirect(url_for('main.home'))

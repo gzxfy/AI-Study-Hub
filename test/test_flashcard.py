@@ -271,3 +271,17 @@ def test_edit_only_difficulty(client):
     assert flashcard.question == 'Sample Question Edit Flashcard'
     assert flashcard.answer == 'Sample Answer Edit Flashcard'
     assert flashcard.difficulty == 'medium'
+
+def test_delete_flashcard(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.post(f'/deleteFlashcard/{flashcard_id}', follow_redirects=True)
+    assert b'Flashcard deleted successfully!' in response.data
+    flashcard = Flashcard.query.get(flashcard_id)
+    assert flashcard is None
