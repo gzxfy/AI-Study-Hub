@@ -104,3 +104,19 @@ class Flashcard(db.Model):
 
     def __repr__(self):
         return f'<Flashcard {self.question[:20]}... Difficulty: {self.difficulty}>'
+    
+class FlashcardProgress(db.Model):
+    __tablename__ = 'flashcard_progress'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
+    times_seen = db.Column(db.Integer, default=0)  # e.g., number of times the flashcard has been seen
+    times_correct = db.Column(db.Integer, default=0)  # e.g., number of times the flashcard has been answered correctly
+    streak = db.Column(db.Integer, default=0)  # e.g., number of consecutive correct answers
+    progress = db.Column(db.Integer, default=0)  # e.g., 0 to 100 representing progress percentage
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # e.g., timestamp of the last time the flashcard was seen
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<FlashcardProgress {self.progress}% for Flashcard {self.flashcard_id}>'
