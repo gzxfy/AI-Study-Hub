@@ -16,3 +16,17 @@ def get_flashcard_by_id(flashcard_id, user_id=None):
 
 def get_all_flashcards(user_id):
     return Flashcard.query.filter_by(user_id=user_id).all()
+
+def edit_flashcard(flashcard_id, user_id, question=None, answer=None, difficulty=None):
+    flashcard = get_flashcard_by_id(flashcard_id, user_id)
+    if not flashcard:
+        return None
+    if question is not None:
+        flashcard.question = question
+    if answer is not None:
+        flashcard.answer = answer
+    if difficulty is not None:
+        flashcard.difficulty = difficulty
+    validation_helpers.validate_flashcard_data(flashcard.question, flashcard.answer, flashcard.difficulty)
+    db.session.commit()
+    return flashcard

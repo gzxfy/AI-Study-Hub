@@ -172,3 +172,102 @@ def test_view_flashcard_not_found(client):
     response = client.get(f'/flashcard/{flashcard_id}', follow_redirects=True)
     assert b'Flashcard not found.' in response.data  # Assuming the view_flashcard route flashes this message when the flashcard is not found
     assert response.status_code == 200  # Assuming the follow_redirects=True results in a 200 status code after redirection
+
+def test_edit_flashcard(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.post(f'/editFlashcard/{flashcard_id}', data={
+        'question': 'Updated Question Edit Flashcard',
+        'answer': 'Updated Answer Edit Flashcard',
+        'difficulty': 'medium'
+    }, follow_redirects=True)
+    assert b'Flashcard updated successfully!' in response.data  # Assuming the edit_flashcard route flashes this message upon successful update
+    # Optionally, you can also verify that the flashcard's details have been updated by fetching the flashcard and checking its content
+    response = client.get(f'/flashcard/{flashcard_id}')
+    assert b'Updated Question Edit Flashcard' in response.data
+    assert b'Updated Answer Edit Flashcard' in response.data
+    flashcard = Flashcard.query.get(flashcard_id)
+    assert flashcard.question == 'Updated Question Edit Flashcard'
+    assert flashcard.answer == 'Updated Answer Edit Flashcard'
+    assert flashcard.difficulty == 'medium'
+
+def test_edit_flashcard_not_found(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    flashcard_id = 999  # Assuming this ID does not exist
+    response = client.post(f'/editFlashcard/{flashcard_id}', data={
+        'question': 'Updated Question Edit Flashcard',
+        'answer': 'Updated Answer Edit Flashcard',
+        'difficulty': 'medium'
+    }, follow_redirects=True)
+    assert b'Flashcard not found.' in response.data  # Assuming the edit_flashcard route flashes this message when the flashcard is not found
+    assert response.status_code == 200  # Assuming the follow_redirects=True results in a 200 status code after redirection
+
+def test_edit_only_question(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+    
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.post(f'/editFlashcard/{flashcard_id}', data={
+        'question': 'Updated Question Only Edit Flashcard',
+        'answer': 'Sample Answer Edit Flashcard',
+        'difficulty': 'easy'
+    }, follow_redirects=True)
+    assert b'Flashcard updated successfully!' in response.data
+    flashcard = Flashcard.query.get(flashcard_id)
+    assert flashcard.question == 'Updated Question Only Edit Flashcard'
+    assert flashcard.answer == 'Sample Answer Edit Flashcard'
+    assert flashcard.difficulty == 'easy'
+
+def test_edit_only_answer(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+    
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.post(f'/editFlashcard/{flashcard_id}', data={
+        'question': 'Sample Question Edit Flashcard',
+        'answer': 'Updated Answer Only Edit Flashcard',
+        'difficulty': 'easy'
+    }, follow_redirects=True)
+    assert b'Flashcard updated successfully!' in response.data
+    flashcard = Flashcard.query.get(flashcard_id)
+    assert flashcard.question == 'Sample Question Edit Flashcard'
+    assert flashcard.answer == 'Updated Answer Only Edit Flashcard'
+    assert flashcard.difficulty == 'easy'
+
+def test_edit_only_difficulty(client):
+    register_and_login(client)
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+        session['username'] = 'testuser'
+
+    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
+    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
+    flashcard_id = 1  # Assuming this is the ID of the created flashcard
+    response = client.post(f'/editFlashcard/{flashcard_id}', data={
+        'question': 'Sample Question Edit Flashcard',
+        'answer': 'Sample Answer Edit Flashcard',
+        'difficulty': 'medium'
+    }, follow_redirects=True)
+    assert b'Flashcard updated successfully!' in response.data
+    flashcard = Flashcard.query.get(flashcard_id)
+    assert flashcard.question == 'Sample Question Edit Flashcard'
+    assert flashcard.answer == 'Sample Answer Edit Flashcard'
+    assert flashcard.difficulty == 'medium'
