@@ -40,3 +40,5 @@ def delete_flashcard(flashcard_id, user_id):
     db.session.delete(flashcard)
     db.session.commit()
     return flashcard
+
+
