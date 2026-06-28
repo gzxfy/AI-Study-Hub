@@ -1,0 +1,23 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('flashcard.create_flashcard') }}">
+  <label for="topic_id">Topic ID:</label>
+  <input type="text" id="topic_id" name="topic_id" value="{{ request.form.get('topic_id', '') }}">
+  <label for="note_id">Note ID:</label>
+  <input type="text" id="note_id" name="note_id" value="{{ request.form.get('note_id', '') }}">
+  <label for="question">Question:</label>
+  <input type="text" id="question" name="question" value="{{ request.form.get('question', '') }}">
+  <label for="answer">Answer:</label>
+  <input type="text" id="answer" name="answer" value="{{ request.form.get('answer', '') }}">
+  <label for="difficulty">Difficulty:</label>
+  <input type="text" id="difficulty" name="difficulty" value="{{ request.form.get('difficulty', '') }}">
+  <button type="submit">Create Flashcard</button>
+</form>
