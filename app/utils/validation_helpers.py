@@ -2,6 +2,7 @@ from functools import wraps
 import re
 
 from flask import flash, session, redirect, url_for
+from app.models.models import User
 
 # Validation helper functions for email and password
 def validate_email(email):
@@ -11,6 +12,15 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(pattern, email):
         raise ValueError("Invalid email format.")
+    
+def validate_username(username):
+    if username is None or username.strip() == "":
+        raise ValueError("Username is required.")
+    if len(username) < 3:
+        raise ValueError("Username must be at least 3 characters long.")
+    if len(username) > 50:
+        raise ValueError("Username cannot be longer than 50 characters.")
+    return True
     
 def validate_password(password):
     if password is None or password.strip() == "":
@@ -30,6 +40,33 @@ def validate_password(password):
 def validate_email_and_password(email, password):
     validate_email(email)
     validate_password(password)
+    return True
+
+def validate_user_data_for_registration(username, email, password, confirm_password):
+    username = (username or "").strip()
+    email = (email or "").strip()
+    validate_username(username)
+    validate_email(email)
+    validate_password(password)
+    if password != confirm_password:
+        raise ValueError("Passwords do not match.")
+    return True
+
+def validate_user_data_for_login(email, password):
+    email = (email or "").strip()
+    validate_email(email)
+    validate_password(password)
+    return True
+
+def validate_if_username_or_email_exists(username, email):
+    username = (username or "").strip()
+    email = (email or "").strip()
+    if User.query.filter_by(username=username).first():
+        raise ValueError("Username is already taken.")
+    
+    if User.query.filter_by(email=email).first():
+        raise ValueError("Email already registered.")
+    
     return True
 
 # Will most likely be changed to use a more robust validation library in the future, and for better error handling and user feedback, but this is a simple validation function for now.
@@ -70,6 +107,19 @@ def validate_topic_data(title, description, color):
     if len(description) > 1000:
         raise ValueError("Description cannot be longer than 1000 characters.")
     # Additional validation can be added here, such as checking for prohibited words or formatting requirements
+    return True
+
+def validate_flashcard_data(question, answer, difficulty=None):
+    if not question or question.strip() == "":
+        raise ValueError("Question is required.")
+    if not answer or answer.strip() == "":
+        raise ValueError("Answer is required.")
+    if difficulty and difficulty not in ('easy', 'medium', 'hard'):
+        raise ValueError("Difficulty must be 'easy', 'medium', or 'hard' if provided.")
+    if len(question) > 500:
+        raise ValueError("Question cannot be longer than 500 characters.")
+    if len(answer) > 2000:
+        raise ValueError("Answer cannot be longer than 2000 characters.")
     return True
 
 def login_required(f):

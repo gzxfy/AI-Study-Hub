@@ -8,7 +8,7 @@
   {% endif %}
 {% endwith %}
 
-<form method="POST" action="{{ url_for('main.topic_create') }}">
+<form method="POST" action="{{ url_for('topic.topic_create') }}">
   <label for="title">Title:</label>
   <input type="text" id="title" name="title" required>
   <label for="description">Description:</label>
