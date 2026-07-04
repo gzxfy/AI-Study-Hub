@@ -1,0 +1,17 @@
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<h1>Progress Dashboard</h1>
+
+<p>Total Cards: {{ progress.total_cards }}</p>
+<p>Total Reviewed: {{ progress.total_reviewed }}</p>
+<p>Average Accuracy: {{ progress.average_accuracy }}%</p>
+<p>Cards Mastered: {{ progress.cards_mastered }}</p>
+<p>Cards Needing Reviewing: {{ progress.cards_needing_reviewing }}</p>
