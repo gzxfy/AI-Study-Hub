@@ -83,4 +83,3 @@ def delete_flashcard(flashcard_id):
     except ValueError as ve:
         flash(str(ve), 'danger')
     return redirect(url_for('main.home'))
-
