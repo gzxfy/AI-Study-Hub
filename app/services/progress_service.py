@@ -1,7 +1,7 @@
 import app.utils.validation_helpers as validation_helpers
 from app.models.models import FlashcardProgress
 
-def get_Flashcard_progress(user_id, flashcard_id):
+def get_flashcard_progress(user_id, flashcard_id):
     return FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard_id).first()
 
 def get_user_progress(user_id):
