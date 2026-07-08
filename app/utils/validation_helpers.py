@@ -130,3 +130,15 @@ def login_required(f):
             return redirect(url_for('main.home'))  # Redirect to home page if user is not logged in
         return f(*args, **kwargs)
     return decorated_function
+
+
+
+VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
+
+def validate_difficulty(difficulty=None, card_count=None):
+    if difficulty and difficulty not in VALID_DIFFICULTIES:
+        raise ValueError(f"Invalid difficulty level. Valid options are: {', '.join(VALID_DIFFICULTIES)}")
+    if card_count is not None:
+        if not isinstance(card_count, int) or card_count <= 0:
+            raise ValueError("card_count must be a positive integer")
+    return True

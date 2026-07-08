@@ -1,5 +1,5 @@
 from app import db
-from app.models.models import Topic, Note, db
+from app.models.models import Topic, db
 import app.utils.validation_helpers as validation_helpers
 
 
