@@ -35,7 +35,6 @@ def create_note():
 @csrf.exempt  # Exempt the view route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the view note route
 def view_note(note_id):
-
     try:
         note = note_service.view_note(note_id, session.get("user_id"))
     except ValueError as ve:
@@ -48,7 +47,6 @@ def view_note(note_id):
 @csrf.exempt  # Exempt the delete route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the delete note route
 def delete_note(note_id):
-    
     try:
         note_service.delete_note(note_id, session.get("user_id"))
         flash('Note deleted successfully!', 'success')

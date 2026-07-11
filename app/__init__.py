@@ -30,6 +30,7 @@ def create_app(test_config=None):
     from .routes.ai_assisstant import ai_assisstant_bp
     from .routes.flashcard import flashcard_bp
     from .routes.progress import progress_bp
+    from .routes.study_mode import study_mode_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(note_bp)
@@ -37,6 +38,7 @@ def create_app(test_config=None):
     app.register_blueprint(ai_assisstant_bp)
     app.register_blueprint(flashcard_bp)
     app.register_blueprint(progress_bp)
+    app.register_blueprint(study_mode_bp)
 
     @login_manager.user_loader
     def load_user(user_id):

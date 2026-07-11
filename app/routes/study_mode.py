@@ -10,13 +10,15 @@ study_mode_bp = Blueprint('study_mode', __name__)
 @csrf.exempt
 @validation_helpers.login_required
 def start_study_mode():
-
-    user_id = session.get('user_id')  # Get the logged-in user's ID
-    note_id = request.args.get('note_id')  # Assuming the note_id is passed as a query parameter
-    difficulty = request.args.get('difficulty')  # Assuming the difficulty is passed as a query parameter
-    card_count_raw = request.args.get('card_count')  # Assuming the card_count is passed as a query parameter
-    card_count = int(card_count_raw) if card_count_raw else None
-    priority = request.args.get('priority')  # Assuming the priority is passed as a query parameter
+    user_id = session.get('user_id')  
+    try:
+        note_id = int(request.args.get('note_id'))  
+        card_count_raw = request.args.get('card_count')  
+        card_count = int(card_count_raw) if card_count_raw else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid parameters, must be positive integers"}), 400  
+    difficulty = request.args.get('difficulty')  
+    priority = request.args.get('priority')  
 
     cards = study_mode_service.start_study_mode(user_id=user_id, note_id=note_id, difficulty=difficulty, card_count=card_count, priority=priority)
 
@@ -40,26 +42,14 @@ def review_study_mode():
         "streak": review.streak,
         "progress": review.progress
     })
-    # user_id = session.get('user_id')  # Get the logged-in user's ID
-    # if request.method == 'GET':
-    #     try:
-    #         note_id = request.args.get('note_id')  # Assuming the note_id is passed as a query parameter
-    #         difficulty = request.args.get('difficulty')  # Assuming the difficulty is passed as a query parameter
-    #         card_count = request.args.get('card_count')  # Assuming the card_count is passed as a query parameter
-    #         priority = request.args.get('priority')  # Assuming the priority is passed as a query parameter
-    #         flash("Study mode review started successfully!", "success")
-    #         return study_mode_service.review_flashcard(user_id=user_id, note_id=note_id, difficulty=difficulty, card_count=card_count, priority=priority)
-    #     except ValueError as ve:
-    #         return str(ve), 400
-    return '', 405  # Method not allowed if not GET
 
 @study_mode_bp.route('/study_mode/end', methods=['POST'])
 @csrf.exempt
 @validation_helpers.login_required
 def end_study_mode():
-    user_id = session.get('user_id')  # Get the logged-in user's ID
-    payload = request.get_json() or {}  # Get the JSON payload from the request
-    reviewed_results = payload.get('review_results', [])  # Get the review results from the payload
+    user_id = session.get('user_id')  
+    payload = request.get_json() or {} 
+    reviewed_results = payload.get('reviewed_results', []) 
 
     summary = study_mode_service.end_study_mode(user_id=user_id, reviewed_results=reviewed_results)
-    return jsonify(summary)  # Return the summary of the study session as JSON response
+    return jsonify(summary)  

@@ -127,7 +127,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash("You must be logged in to access this page.", "danger")
-            return redirect(url_for('main.home'))  # Redirect to home page if user is not logged in
+            return redirect(url_for('auth.login'))  # Redirect to login page if user is not logged in
         return f(*args, **kwargs)
     return decorated_function
 

@@ -1,5 +1,5 @@
 import random
-from app.models import FlashcardProgress, Flashcard
+from app.models.models import FlashcardProgress, Flashcard
 from app import db
 from datetime import datetime
 
@@ -43,14 +43,14 @@ def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priorit
     return cards
 
 
-def review_flashcard(user_id, flashcard, marked_correctly):
-    flashcard = Flashcard.query.filter_by(id=flashcard.id, user_id=user_id).first()
+def review_flashcard(user_id, flashcard_id, marked_correctly):
+    flashcard = Flashcard.query.filter_by(id=flashcard_id, user_id=user_id).first()
     if not flashcard:
         raise ValueError("Flashcard not found.")
     
-    progress = FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard.id).first()
+    progress = FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard_id).first()
     if not progress:
-        progress = FlashcardProgress(user_id=user_id, flashcard_id=flashcard.id, times_seen=0, times_correct=0, streak=0, progress=0)
+        progress = FlashcardProgress(user_id=user_id, flashcard_id=flashcard_id, times_seen=0, times_correct=0, streak=0, progress=0)
         db.session.add(progress)  # Add the new progress record to the session
     
     progress.times_seen += 1
