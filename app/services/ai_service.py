@@ -59,6 +59,5 @@ def ask_ai(question, note_content, conversation_messages):
     return response.choices[0].message.content
 
 def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedback):
-    # This function can be expanded to use AI for analyzing feedback and providing insights
-    # For now, it simply logs the feedback for the question attempt
+    # This function would use the feedback provided by the user to generate insights or suggestions for improvement using the AI agent. The implementation would depend on how you want to structure the feedback and what kind of insights you want to provide.
     pass
