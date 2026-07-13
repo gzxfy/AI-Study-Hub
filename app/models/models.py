@@ -120,3 +120,41 @@ class FlashcardProgress(db.Model):
 
     def __repr__(self):
         return f'<FlashcardProgress {self.progress}% for Flashcard {self.flashcard_id}>'
+    
+class QuizAttempt(db.Model):
+    __tablename__ = 'quiz_attempts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
+
+    score = db.Column(db.Float, default=0)  
+    status = db.Column(db.String(20), default='in_progress')  # 'in_progress', 'completed'
+    question_index = db.Column(db.Integer, default=0)  # To track which question the user is currently on
+    question_order = db.Column(db.Json, nullable=True)  # To store the order of flashcard IDs for the quiz attempt
+
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    question_attempts = db.relationship('QuizQuestionAttempt', backref='quiz_attempt', cascade='all, delete-orphan')
+    def __repr__(self):
+        return f'<QuizAttempt {self.id} for Note {self.note_id} Topic {self.topic_id} Score: {self.score}>'
+    
+class QuizQuestionAttempt(db.Model):
+    __tablename__ = 'quiz_question_attempts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'), nullable=False)
+    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
+
+    user_answer = db.Column(db.Text, nullable=False)
+    correct_answer = db.Column(db.Text, nullable=False)
+    is_correct = db.Column(db.Boolean, default=False)
+
+    time_taken = db.Column(db.Float, default=0)  # Time taken to answer the question in seconds
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<QuizQuestionAttempt {self.id} for QuizAttempt {self.quiz_attempt_id} Flashcard {self.flashcard_id}>'
