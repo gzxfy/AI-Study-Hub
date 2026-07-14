@@ -59,5 +59,41 @@ def ask_ai(question, note_content, conversation_messages):
     return response.choices[0].message.content
 
 def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedback):
-    # This function would use the feedback provided by the user to generate insights or suggestions for improvement using the AI agent. The implementation would depend on how you want to structure the feedback and what kind of insights you want to provide.
-    pass
+    from app.models.models import Flashcard, QuizAttempt, QuizQuestionAttempt
+    quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
+    if not quiz_attempt:
+        raise ValueError("Quiz attempt not found")
+    
+    flashcard = Flashcard.query.filter_by(id=flashcard_id, user_id=user_id).first()
+    if not flashcard:
+        raise ValueError("Flashcard not found")
+    
+    question_attempt = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, flashcard_id=flashcard_id).first()
+    if not question_attempt:
+        raise ValueError("Quiz question attempt not found")
+    
+    correctness = "correct" if question_attempt.is_correct else "incorrect"
+    prompt = (
+        "You are a quiz review tutor. Explain clearly why the learner answer is right or wrong. "
+        "Give one key concept and one improvement tip.\n\n"
+        f"Question: {flashcard.question}\n"
+        f"Correct answer: {question_attempt.correct_answer}\n"
+        f"Learner answer: {question_attempt.user_answer}\n"
+        f"Result: {correctness}\n"
+        f"Learner context: {feedback or 'None'}"
+    )
+    client = _build_client()
+    if client is None:
+        if question_attempt.is_correct:
+            return "Correct answer. Reinforce this concept with one more similar problem."
+        return "Incorrect answer. Compare your answer with the correct one and focus on the key concept tested."
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are concise, supportive, and specific in your feedback to help the learner understand their quiz question performance."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    return response.choices[0].message.content
