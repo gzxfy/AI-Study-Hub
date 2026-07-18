@@ -132,6 +132,7 @@ def login_required(f):
     return decorated_function
 
 
+# Validation helper functions for study sessions and quizzes
 
 VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 
@@ -149,4 +150,16 @@ def validate_quiz_difficulty(difficulty=None, question_count=None):
     if question_count is not None:
         if not isinstance(question_count, int) or question_count <= 0:
             raise ValueError("question_count must be a positive integer")
+    return True
+
+
+def validate_study_event_data(user_id, flashcard_id, is_correct, source=None):
+    if not isinstance(user_id, int) or user_id <= 0:
+        raise ValueError("user_id must be a positive integer.")
+    if not isinstance(flashcard_id, int) or flashcard_id <= 0:
+        raise ValueError("flashcard_id must be a positive integer.")
+    if not isinstance(is_correct, bool):
+        raise ValueError("is_correct must be a boolean value.")
+    if source is not None and not isinstance(source, str):
+        raise ValueError("source must be a string if provided.")
     return True

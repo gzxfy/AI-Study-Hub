@@ -118,8 +118,18 @@ class FlashcardProgress(db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # e.g., timestamp of the last time the flashcard was seen
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class StudyEvent(db.Model):
+    __tablename__ = 'study_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
+    studied_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_correct = db.Column(db.Boolean, nullable=False)  # e.g., True if the answer was correct, False otherwise
+    source = db.Column(db.String(50), nullable=True)  # e.g., 'quiz', 'review', etc.
     def __repr__(self):
-        return f'<FlashcardProgress {self.progress}% for Flashcard {self.flashcard_id}>'
+        return f'<StudyEvent User {self.user_id} Flashcard {self.flashcard_id} Correct: {self.is_correct}>'
+    
     
 class QuizAttempt(db.Model):
     __tablename__ = 'quiz_attempts'
