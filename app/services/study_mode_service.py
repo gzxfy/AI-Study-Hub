@@ -3,10 +3,10 @@ from app.models.models import FlashcardProgress, Flashcard
 from app import db
 from datetime import datetime
 
-from app.utils.validation_helpers import validate_difficulty
+from app.utils.validation_helpers import validate_study_difficulty
 
 def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None):
-    validate_difficulty(difficulty, card_count)
+    validate_study_difficulty(difficulty, card_count)
     
     query = Flashcard.query.filter_by(user_id=user_id, note_id=note_id)
     if difficulty:
