@@ -127,12 +127,13 @@ class QuizAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
+    # This may get changed to be nullable=True if we want to allow quizzes without a specific note, but for now, let's keep it required.
     note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
 
     score = db.Column(db.Float, default=0)  
     status = db.Column(db.String(20), default='in_progress')  # 'in_progress', 'completed'
     question_index = db.Column(db.Integer, default=0)  # To track which question the user is currently on
-    question_order = db.Column(db.Json, nullable=True)  # To store the order of flashcard IDs for the quiz attempt
+    question_order = db.Column(db.JSON, nullable=True)  # To store the order of flashcard IDs for the quiz attempt
 
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     finished_at = db.Column(db.DateTime, nullable=True)

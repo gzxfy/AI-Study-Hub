@@ -13,13 +13,14 @@ def compute_score_percentage(correct_count, total_count):
         return 0.0
     return round(correct_count / total_count * 100, 2)
 
+# This function will most likely be moved to a repository folder in the future, but for now, it's here to keep things simple.
 def get_quiz_attempt_for_user(quiz_attempt_id, user_id):
     quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
     if not quiz_attempt:
         raise ValueError("Quiz attempt not found.")
     return quiz_attempt
 
-# load questions for quiz 
+# load questions for quiz, similar to study mode
 def load_questions_for_quiz(user_id, note_id, topic_id=None, question_count=10, difficulty=None):
     validate_quiz_difficulty(difficulty, question_count)
     
@@ -43,6 +44,7 @@ def start_quiz(user_id, note_id, topic_id=None, question_count=10, difficulty=No
                                         topic_id=topic_id,
                                         question_count=question_count,
                                         difficulty=difficulty)
+    # This will most likely be changed to allow quizzes without a specific note or flashcards, but for now, let's keep it required.
     if not questions:
         raise ValueError("No flashcards available for the quiz with the given criteria.")
     
@@ -70,11 +72,12 @@ def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time
     if quiz_attempt.status == 'completed':
         raise ValueError("Quiz attempt is already completed.")
     
+    # This will most likely be changed to allow quizzes without a specific note or flashcards, but for now, let's keep it required.
     flashcard = Flashcard.query.filter_by(id=flashcard_id, user_id=user_id).first()
     if not flashcard:
         raise ValueError("Flashcard not found for the submitted answer.")
     
-    is_correct = normalize_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time_taken)
+    is_correct = normalize_answer(user_answer) == normalize_answer(flashcard.answer)
     question_attempt = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, flashcard_id=flashcard_id).first()
 
     if not question_attempt:
@@ -91,12 +94,12 @@ def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time
         question_attempt.is_correct = is_correct
         question_attempt.time_taken = float(time_taken or 0)
     
-    if question_attempt.question_order:
+    if quiz_attempt.question_order:
         try:
-            position = question_attempt.question_order.index(flashcard_id)
+            position = quiz_attempt.question_order.index(flashcard_id)
         except ValueError:
-            position = question_attempt.question_index
-        question_attempt.question_index = max(question_attempt.question_index, position + 1)
+            position = quiz_attempt.question_index
+        quiz_attempt.question_index = max(quiz_attempt.question_index, position + 1)
     
     total_questions = len(quiz_attempt.question_order or [])
     correct_answers = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, is_correct=True).count()
