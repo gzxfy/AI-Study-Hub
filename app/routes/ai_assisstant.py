@@ -14,8 +14,11 @@ ai_assisstant_bp = Blueprint('ai_assistant', __name__)
 def ai_assistant(note_id):
     note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
 
-    if not note:
-        flash("Note not found.", "error")
+    try:
+        if not note:
+            raise ValueError("Note not found or you do not have permission to access it.")
+    except ValueError as ve:
+        flash(str(ve), 'danger')
         return redirect(url_for('main.home'))
     
     conversation = note.conversation if note.conversation else None
@@ -26,7 +29,7 @@ def ai_assistant(note_id):
 
     messages = conversation.messages
     if request.method == 'POST':
-        question = request.form.get('message').strip()
+        question = (request.form.get('message') or '').strip()
 
         if question:
             prior_messages = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.timestamp.asc()).all()

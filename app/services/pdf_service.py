@@ -1,15 +1,8 @@
 from pypdf import PdfReader
-from app import db
 
-def extract_text_from_pdf(pdf_path):
+def extract_text_from_pdf(pdf_path: str) -> tuple[str, int]:
     reader = PdfReader(pdf_path)
-    if not reader.pages:
-        raise ValueError("The provided PDF is empty or cannot be read.")
-    
-    full_text = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            full_text.append(text)
-    
-    return "\n".join(full_text)
+    pages = reader.pages or []
+    text_parts = [(p.extract_text() or "").strip() for p in pages]
+    text = "\n".join([t for t in text_parts if t])
+    return text, len(pages)

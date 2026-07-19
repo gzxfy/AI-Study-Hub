@@ -71,3 +71,49 @@ def test_message_being_saved(client):
     conversation = note.conversation
     assert conversation is not None  # Ensure the conversation exists
     assert Message.query.filter_by(conversation_id=conversation.id, content='Hello AI!').count() == 1  # Ensure the message was saved
+
+def test_mode_detection():
+    from app.services.ai_service import detect_mode_from_question
+
+    assert detect_mode_from_question("Quiz the concept of gravity.") == "quiz"
+    assert detect_mode_from_question("What is the capital of France?") == "question"
+    assert detect_mode_from_question("Summarize the article about climate change.") == "summary"
+    assert detect_mode_from_question("This is a random statement.") == "general"
+
+def test_build_messages_maps_non_special_modes_to_teach():
+    from app.services.ai_service import build_messages
+
+    messages = build_messages("This is a general question.", "Note content here.", conversation_messages=[])
+
+    assert messages[0]['role'] == 'system'
+    assert "study tutor" in messages[0]["content"].lower()
+    assert "check-for-understanding question" in messages[0]["content"].lower()
+
+def test_message_structure_in_build_messages():
+    from app.services.ai_service import build_messages
+
+    question = "What is AI?"
+    note_content = "AI stands for Artificial Intelligence."
+    conversation_messages = [Message(role='user', content='Hello'), Message(role='assistant', content='Hi!')]
+    
+    messages = build_messages(question, note_content, conversation_messages)
+
+    assert messages[0]['role'] == 'system'
+    assert messages[1]['role'] == 'system'
+    assert messages[2]['role'] == 'user' and messages[2]['content'] == 'Hello'
+    assert messages[3]['role'] == 'assistant' and messages[3]['content'] == 'Hi!'
+    assert messages[-1]['role'] == 'user' and messages[-1]['content'] == question
+
+def test_no_duplicate_messages_in_build_messages():
+    from app.services.ai_service import build_messages
+
+    question = "What is AI?"
+    note_content = "AI stands for Artificial Intelligence."
+    conversation_messages = [Message(role='user', content='Hello'), Message(role='assistant', content='Hi!')]
+    
+    messages = build_messages(question, note_content, conversation_messages)
+
+    # Ensure that the user question is only added once at the end
+    user_questions = [msg for msg in messages if msg['role'] == 'user' and msg['content'] == question]
+    assert len(user_questions) == 1
+

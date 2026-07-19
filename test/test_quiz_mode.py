@@ -140,16 +140,20 @@ def test_submit_quiz_answer_marks_correct(client, test_app):
         "/quiz/start",
         json={"note_id": note_id, "question_count": 2},
     )
-    quiz_attempt_id = start_response.get_json()["quiz_attempt_id"]
+    start_data = start_response.get_json()
+    quiz_attempt_id = start_data["quiz_attempt_id"]
+
+    # Use the served question order from /quiz/start (questions are shuffled).
+    first_question_id = start_data["questions"][0]["id"]
+    first_card = next(fc for fc in flashcards if fc["id"] == first_question_id)
 
     # Submit correct answer
-    fc = flashcards[0]
     response = client.post(
         "/quiz/submit_answer",
         json={
             "quiz_attempt_id": quiz_attempt_id,
-            "flashcard_id": fc["id"],
-            "user_answer": fc["answer"],
+            "flashcard_id": first_card["id"],
+            "user_answer": first_card["answer"],
             "time_taken": 5.0,
         },
     )
@@ -158,7 +162,7 @@ def test_submit_quiz_answer_marks_correct(client, test_app):
 
     assert response.status_code == 200
     assert data["is_correct"] is True
-    assert data["correct_answer"] == fc["answer"]
+    assert data["correct_answer"] == first_card["answer"]
     # CHANGED: 1 correct out of 2 total = 50%
     assert data["score"] == 50.0
     # CHANGED: question_index incremented after first answer
@@ -182,15 +186,18 @@ def test_submit_quiz_answer_marks_incorrect(client, test_app):
         "/quiz/start",
         json={"note_id": note_id, "question_count": 2},
     )
-    quiz_attempt_id = start_response.get_json()["quiz_attempt_id"]
+    start_data = start_response.get_json()
+    quiz_attempt_id = start_data["quiz_attempt_id"]
+
+    first_question_id = start_data["questions"][0]["id"]
+    first_card = next(fc for fc in flashcards if fc["id"] == first_question_id)
 
     # Submit incorrect answer
-    fc = flashcards[0]
     response = client.post(
         "/quiz/submit_answer",
         json={
             "quiz_attempt_id": quiz_attempt_id,
-            "flashcard_id": fc["id"],
+            "flashcard_id": first_card["id"],
             "user_answer": "wrong answer",
             "time_taken": 3.0,
         },
@@ -200,7 +207,7 @@ def test_submit_quiz_answer_marks_incorrect(client, test_app):
     assert response.status_code == 200
     # CHANGED: New test - verify incorrect answer is tracked
     assert data["is_correct"] is False
-    assert data["correct_answer"] == fc["answer"]
+    assert data["correct_answer"] == first_card["answer"]
     # CHANGED: 0 correct out of 2 = 0%
     assert data["score"] == 0.0
     assert data["question_index"] == 1
@@ -219,10 +226,16 @@ def test_finish_quiz_returns_summary(client, test_app):
         "/quiz/start",
         json={"note_id": note_id, "question_count": 2},
     )
-    quiz_attempt_id = start_response.get_json()["quiz_attempt_id"]
+    start_data = start_response.get_json()
+    quiz_attempt_id = start_data["quiz_attempt_id"]
+
+    ordered_cards = [
+        next(fc for fc in flashcards if fc["id"] == q["id"])
+        for q in start_data["questions"]
+    ]
 
     # Submit both answers
-    for i, fc in enumerate(flashcards[:2]):
+    for fc in ordered_cards:
         client.post(
             "/quiz/submit_answer",
             json={
@@ -320,9 +333,16 @@ def test_review_quiz_summary(client, test_app):
         "/quiz/start",
         json={"note_id": note_id, "question_count": 2},
     )
-    quiz_attempt_id = start_response.get_json()["quiz_attempt_id"]
+    start_data = start_response.get_json()
+    quiz_attempt_id = start_data["quiz_attempt_id"]
 
-    for i, fc in enumerate(flashcards[:2]):
+    # Submit answers in the exact order provided by the quiz attempt.
+    ordered_cards = [
+        next(fc for fc in flashcards if fc["id"] == q["id"])
+        for q in start_data["questions"]
+    ]
+
+    for i, fc in enumerate(ordered_cards):
         is_correct = (i == 0)  # First is correct, second is incorrect
         client.post(
             "/quiz/submit_answer",

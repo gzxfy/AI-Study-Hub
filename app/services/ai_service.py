@@ -15,99 +15,110 @@ def _build_client():
 
     return OpenAI(api_key=api_key)
 
-def chunk_text(text, chunk_size=1000, overlap=200):
-    """
-    Splits the input text into chunks of specified size with optional overlap.
+# Helper function to build the system instruction for the AI model based on the mode of interaction (e.g., "quiz", "summary", or default tutoring mode).
+def build_tutor_instruction(mode: str) -> str:
+    base = (
+        "You are a study tutor.\n"
+        "Use provided note context as the primary source.\n"
+        "If context is missing, say that clearly.\n"
+        "Be concise and supportive."
+    )
+
+    if mode == "quiz":
+        return base + (
+            "\nReturn exactly one practice question."
+            "\nDo not include the answer unless asked."
+        )
+    if mode == "summary":
+        return base + (
+            "\nGive a short summary and 3 key takeaways."
+        )
     
+    return base + (
+         "\nExplain clearly, then ask one quick check-for-understanding question."
+    )
+
+def detect_mode_from_question(question: str) -> str:
+    q = (question or "").strip().lower()
+
+    # Quiz intent
+    if (
+        q.startswith("quiz:")
+        or q.startswith("quiz me")
+        or q.startswith("quiz ")
+        or q.startswith("test me")
+    ):
+        return "quiz"
+
+    # Summary intent
+    if (
+        q.startswith("summary:")
+        or q.startswith("summarize")
+        or q.startswith("summary ")
+    ):
+        return "summary"
+
+    # Direct question vs general statement
+    if q.endswith("?") or q.startswith(("what", "why", "how", "when", "where", "who")):
+        return "question"
+
+    return "general"
+
+# Helper function to split text into chunks for processing by the AI model.
+def chunk_text(text: str, size: int = 1200, overlap: int = 200) -> list[str]:
+    """
+    Splits the input text into chunks of a specified size with a specified overlap.
+
     :param text: The input text to be chunked.
-    :param chunk_size: The maximum size of each chunk.
+    :param size: The maximum size of each chunk.
     :param overlap: The number of characters to overlap between chunks.
     :return: A list of text chunks.
     """
     chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        
-        # Move the start index forward by chunk_size - overlap to create overlap
-        start += chunk_size - overlap
-    
+    i = 0
+    while i < len(text):
+        chunks.append(text[i:i + size])
+        i += size - overlap
     return chunks
 
-def select_relevant_chunks(question, note_content, top_k=3):
+# Helper function to select the most relevant chunks of note content based on the user's question.
+def select_relevant_chunks(question: str, note_content: str, top_k: int = 3) -> list[str]:
     """
-    Selects the most relevant chunks of note content based on the question.
-    
-    :param question: The user's question.
+    Selects the most relevant chunks of note content based on the user's question.
+
+    :param question: The user's current question.
     :param note_content: The full content of the note.
     :param top_k: The number of top relevant chunks to return.
     :return: A list of the most relevant text chunks.
     """
-    # split the note content into chunks
-    chunks = chunk_text(note_content)
-    question_terms = set(question.lower().split())
-
-    # Score each chunk based on the number of overlapping terms with the question
-    scored=[]
-    for chunk in chunks:
-        chunk_terms = set(chunk.lower().split())
-        # Calculate relevance score based on the number of overlapping terms
-        score = len(question_terms & chunk_terms)
+    terms = set((question or "").lower().split())
+    scored = []
+    for chunk in chunk_text(note_content or ""):
+        score = len(terms.intersection(set(chunk.lower().split())))
         scored.append((score, chunk))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [c for s, c in scored[:top_k] if c.strip()]
 
-    scored.sort(reverse=True, key=lambda item: item[0])  # Sort by score in descending order
-    return [chunk for score, chunk in scored[:top_k] if chunk.strip()]  # Return only non-empty chunks
-
+# Helper function to build the message payload for the AI model, including system instructions, note content, previous conversation messages, and the current user question.
 def build_messages(question, note_content, conversation_messages):
-    """
-    Constructs the message payload for the AI model, including system instructions,
-    note content, previous conversation messages, and the current user question.
-    
-    :param question: The user's current question.
-    :param note_content: The full content of the note.
-    :param conversation_messages: List of previous messages in the conversation.
-    :return: A list of messages formatted for the AI model.
-    """
+    mode = detect_mode_from_question(question)
 
-    relevant_chunks = select_relevant_chunks(question, note_content)
+    instruction_mode = mode if mode in ["quiz", "summary"] else "teach"
+
+    selected = select_relevant_chunks(question, note_content, top_k=3)
     context_block = "\n\n".join(
-        f"Source chunk {index + 1}:\n{chunk}"
-        for index, chunk in enumerate(relevant_chunks)
-    )
+        f"Context {idx+1}:\n{chunk}" for idx, chunk in enumerate(selected)
+    ) or "No extractable note context provided."
 
     messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a study tutor.\n"
-                "First answer using the note.\n"
-                "Then summarize the key point in 1-2 bullets.\n"
-                "Then ask one short practice question.\n"
-                "If the note does not support the answer, say so clearly."
-            )
-        },
-        {
-            "role": "system",
-            "content": f"Relevant note content:\n{context_block}"
-        }
+        {"role": "system", "content": build_tutor_instruction(instruction_mode)},
+        {"role": "system", "content": f"Study note context:\n{context_block}"},
     ]
 
-    # Add previous conversation messages
     for msg in conversation_messages:
-        messages.append({
-            "role": msg.role,
-            "content": msg.content
-        })
+        messages.append({"role": msg.role, "content": msg.content})
 
-    # Add the current user question
-    messages.append({
-        "role": "user",
-        "content": question
-    })
-
+    messages.append({"role": "user", "content": question})
     return messages
 
 
