@@ -80,6 +80,12 @@ def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time
     is_correct = normalize_answer(user_answer) == normalize_answer(flashcard.answer)
     question_attempt = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, flashcard_id=flashcard_id).first()
 
+    # Log the study event for the flashcard answer submission
+    from app.services.study_event import log_study_event
+    log_study_event(user_id=user_id, flashcard_id=flashcard_id, is_correct=is_correct, source='quiz', studied_at=datetime.utcnow())
+    db.session.commit()  # Commit the study event to ensure it's saved before proceeding
+
+    # Update or create the QuizQuestionAttempt record
     if not question_attempt:
         question_attempt = QuizQuestionAttempt(quiz_attempt_id=quiz_attempt_id, 
                                                flashcard_id=flashcard_id,
