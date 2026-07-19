@@ -89,8 +89,8 @@ def validate_note_data(title, content):
         raise ValueError("Content is required.")
     if len(title) > 100:
         raise ValueError("Title cannot be longer than 100 characters.")
-    if len(content) > 2000:
-        raise ValueError("Content cannot be longer than 2000 characters.")
+    if len(content) > 5000:
+        raise ValueError("Content cannot be longer than 5000 characters.")
     # Additional validation can be added here, such as checking for prohibited words or formatting requirements
     return True
 

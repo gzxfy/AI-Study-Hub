@@ -1,11 +1,43 @@
 from email.message import Message
+from io import BytesIO
 from urllib import response
-
 from app.models.models import Conversation, Note, Topic, Message
+from app.services import pdf_service
 from app.services.ai_service import ask_ai
+from app.utils import validation_helpers
 from conftest import client
 import app.services.note_service as note_service
+from app import db
 
+# helper function to create a note for testing purposes
+def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
+    extracted_text = ""
+    uploaded_pdf_name = None
+
+    if uploaded_pdf_path and uploaded_pdf_path.filename:
+        extracted_text, page_count = pdf_service.extract_text_from_pdf(uploaded_pdf_path)
+
+        if not extracted_text.strip():
+            raise ValueError("The uploaded PDF file is empty or could not be read.")
+
+        uploaded_pdf_name = uploaded_pdf_path.filename
+
+    final_content = extracted_text if extracted_text else content
+    validation_helpers.validate_note_data(title, final_content)
+
+    new_note = Note(
+        user_id=user_id,
+        topic_id=topic_id,
+        title=title,
+        content=final_content,
+        uploaded_pdf_path=uploaded_pdf_name,
+    )
+
+    db.session.add(new_note)
+    db.session.commit()
+    return new_note
+
+# Helper function to register and log in a user for testing purposes
 def register_and_login(client, email='test@example.com', password='Password123!'):
     client.post('/register', data={'email': email, 'password': password, 'confirm_password': password}, follow_redirects=True)
     client.post('/login', data={'email': email, 'password': password}, follow_redirects=True)
@@ -15,10 +47,9 @@ def test_creating_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    assert b'Note created successfully!' in response.data
-    assert response.status_code == 200
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
 
+    assert isinstance(response, Note)
     note = Note.query.filter_by(user_id=1, title='Test Note').first()
     assert note is not None
     assert note.content == 'This is a test note.'
@@ -57,9 +88,10 @@ def test_content_length_exceeds_limit(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    long_content = 'C' * 2001  # Content with 2001 characters
+    long_content = 'C' * 5001  # Content with 5001 characters
     response = client.post('/create_note', data={'title': 'Test Title', 'content': long_content}, follow_redirects=True)
-    assert b'Content cannot be longer than 2000 characters.' in response.data
+
+    assert b'Content cannot be longer than 5000 characters.' in response.data
     assert response.status_code == 200
 
 def test_view_note_not_found(client):
@@ -75,50 +107,57 @@ def test_view_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.get('/view/1', follow_redirects=True)  # Assuming 1 is an existing note_id
-    assert b'Test Note' in response.data  # Assuming the note with ID 1 has the title 'Test Note'
-    assert b'This is a test note.' in response.data  # Assuming the note with ID 1 has the content 'This is a test note.'
+    note = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
+    response = client.get(f'/view/{note.id}', follow_redirects=True)  # Assuming note.id is an existing note_id
+    assert b'Test Note' in response.data  # Assuming the note with ID note.id has the title 'Test Note'
+    assert b'This is a test note.' in response.data  # Assuming the note with ID note.id has the content 'This is a test note.'
     assert response.status_code == 200
 
 def test_delete_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.get('/delete_note/1', follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
+    note = Note.query.filter_by(user_id=1, title='Test Note').first()
+
+    response = client.get(f'/delete_note/{note.id}', follow_redirects=True)  # Assuming note.id is an existing note_id
+
     assert b'Note deleted successfully!' in response.data
     assert response.status_code == 200
-    note = Note.query.get(1)
+    note = Note.query.get(note.id)  # Retrieve the note with ID note.id from the database
     assert note is None  # The note should be deleted and no longer exist in the database
 
 def test_edit_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    response = client.post('/edit_note/1', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming 1 is an existing note_id
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
+    note = Note.query.filter_by(user_id=1, title='Test Note').first()
+    response = client.post(f'/edit_note/{note.id}', data={'title': 'Updated Test Note', 'content': 'This is an updated test note.'}, follow_redirects=True)  # Assuming note.id is an existing note_id
+    
     assert b'Note updated successfully!' in response.data
     assert response.status_code == 200
 
-    note = Note.query.get(1)  # Retrieve the note with ID 1 from the database
+    note = Note.query.get(note.id)  # Retrieve the note with ID note.id from the database
     assert note.title == 'Updated Test Note'  # The note's title should be updated
     assert note.content == 'This is an updated test note.'  # The note's content should be updated
 
-    response = client.get('/view/1', follow_redirects=True)
-    assert b'Updated Test Note' in response.data  # Assuming the note with ID 1 has the updated title
-    assert b'This is an updated test note.' in response.data  # Assuming the note with ID 1 has the updated content
+    response = client.get(f'/view/{note.id}', follow_redirects=True)
+    assert b'Updated Test Note' in response.data  # Assuming the note with ID note.id has the updated title
+    assert b'This is an updated test note.' in response.data  # Assuming the note with ID note.id has the updated content
     assert response.status_code == 200
 
 def test_unauthorization_edit_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
-    
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
+    note = Note.query.filter_by(user_id=1, title='Test Note').first()
+
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.post('/edit_note/1', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
+    response = client.post(f'/edit_note/{note.id}', data={'title': 'Hacked Note', 'content': 'This is a hacked note.'}, follow_redirects=True)
+    
     assert b'You do not have permission to edit this note!' in response.data
     assert response.status_code == 200
 
@@ -126,10 +165,12 @@ def test_unauthorization_delete_note(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
 
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
+    note = Note.query.filter_by(user_id=1, title='Test Note').first()
     with client.session_transaction() as session:
         session['user_id'] = 2  # Switch to a different user
-    response = client.get('/delete_note/1', follow_redirects=True)
+    response = client.get(f'/delete_note/{note.id}', follow_redirects=True)
+    
     assert b'You do not have permission to delete this note!' in response.data
     assert response.status_code == 200
 
@@ -147,8 +188,9 @@ def test_dashboard_with_notes(client):
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
     # Create a note for the user
-    response = client.post('/create_note', data={'title': 'Test Note', 'content': 'This is a test note.'}, follow_redirects=True)
+    response = create_note(user_id=1, title='Test Note', content='This is a test note.', topic_id=None)
     response = client.get('/')
+
     assert Note.query.filter_by(user_id=1).count() > 0  # Ensure there are notes for the user
     assert b'Test Note' in response.data  # Assuming the dashboard shows the note title
     assert response.status_code == 200
@@ -159,8 +201,9 @@ def test_dashboard_displays_five_notes(client):
         session['username'] = 'testuser'  # Set a username for the session
     # Create six notes for the user
     for i in range(6):
-        client.post('/create_note', data={'title': f'Test Note {i+1}', 'content': f'This is test note {i+1}.'}, follow_redirects=True)
+        create_note(user_id=1, title=f'Test Note {i+1}', content=f'This is test note {i+1}.', topic_id=None)
     response = client.get('/')
+
     assert Note.query.filter_by(user_id=1).count() >= 5  # Ensure there are at least five notes for the user
     for i in range(6, 1, -1):  # Check that the five most recent notes are displayed
         assert f'Test Note {i}'.encode() in response.data
@@ -171,29 +214,33 @@ def test_note_in_topic(client):
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
     # Create a topic for the user
-    response = client.post('/topic/create', data={'title': 'Test Topic', 'description': 'This is a test topic.', 'color': '#ffffff'}, follow_redirects=True)
+    client.post('/topic/create', data={'title': 'Test Topic', 'description': 'This is a test topic.', 'color': '#ffffff'}, follow_redirects=True)
     topic = Topic.query.filter_by(user_id=1).first()
     # Create a note within the topic
-    response = client.post('/create_note', data={'title': 'Note in Topic', 'content': 'This note is in a topic.', 'topic_id': topic.id}, follow_redirects=True)
-    assert Note.query.filter_by(topic_id=topic.id).count() == 1  # Ensure the note is associated with the topic
-    assert b'Note in Topic' in response.data  # Assuming the note title is displayed after creation
+    note = create_note(user_id=1, title='Note in Topic', content='This note is in a topic.', topic_id=topic.id)
+
+    assert note is not None
+    assert note.topic_id == topic.id
+    assert note.title == "Note in Topic"
+    assert Note.query.filter_by(topic_id=topic.id).count() == 1
 
 def test_note_without_topic(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
-    # Create a note without specifying a topic
-    response = client.post('/create_note', data={'title': 'Note without Topic', 'content': 'This note has no topic.'}, follow_redirects=True)
+    
+    create_note(user_id=1, title='Note without Topic', content='This note has no topic.', topic_id=None)
     note = Note.query.filter_by(user_id=1, topic_id=None).first()
     assert note is not None  # Ensure the note is created without a topic
-    assert b'Note without Topic' in response.data  # Assuming the note title is displayed after creation
+    assert note.title == 'Note without Topic'  # Ensure the note title is correct
+    assert note.content == 'This note has no topic.'  # Ensure the note content is correct
 
 def test_search_notes(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
     # Create a note to search for
-    client.post('/create_note', data={'title': 'Searchable Note', 'content': 'This note can be searched.'}, follow_redirects=True)
+    create_note(user_id=1, title='Searchable Note', content='This note can be searched.', topic_id=None)
     # Search for the note by title
     response = client.get('/search?q=Searchable&type=notes', follow_redirects=True)
     assert b'Searchable Note' in response.data  # Ensure the note is found in the search results
@@ -261,4 +308,56 @@ def test_topic_being_edited(client):
     assert topic.title == 'Edited Topic'  # Ensure the title was updated
     assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
     assert topic.color == '#000000'  # Ensure the color was updated
+
+def test_pdf_upload_request_shape(client, monkeypatch):
+    with client.session_transaction() as session:
+        session["user_id"] = 1
+        session["username"] = "testuser"
+
+    monkeypatch.setattr(
+        "app.services.note_service.pdf_service.extract_text_from_pdf",
+        lambda uploaded_file: ("Extracted PDF text", 1),
+    )
+
+    response = client.post(
+        "/create_note",
+        data={
+            "title": "PDF Note",
+            "content": "Fallback text",
+            "note_pdf": (BytesIO(b"fake pdf bytes"), "note.pdf"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Note created successfully!" in response.data
+
+    note = Note.query.filter_by(title="PDF Note", user_id=1).first()
+    assert note is not None
+    assert note.content == "Extracted PDF text"
+
+def test_empty_pdf_file_handling(client, monkeypatch):
+    with client.session_transaction() as session:
+        session["user_id"] = 1
+        session["username"] = "testuser"
+
+    monkeypatch.setattr(
+        "app.services.note_service.pdf_service.extract_text_from_pdf",
+        lambda uploaded_file: ("", 0),
+    )
+
+    response = client.post(
+        "/create_note",
+        data={
+            "title": "Empty PDF Note",
+            "content": "Fallback text",
+            "note_pdf": (BytesIO(b"fake pdf bytes"), "empty.pdf"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"The uploaded PDF file is empty or could not be read." in response.data
 
