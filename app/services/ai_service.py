@@ -97,3 +97,40 @@ def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedbac
     )
     
     return response.choices[0].message.content
+
+def generate_study_plan_with_AI(user_id, learning_context):
+    """
+    Generates a personalized study plan for the user based on their learning context.
+
+    Args:
+        user_id (int): The ID of the user.
+        learning_context (dict): A dictionary containing the user's notes, study events, and quizzes.
+    """
+    notes = learning_context.get("notes", [])
+    study_events = learning_context.get("study_events", [])
+    quizzes = learning_context.get("quizzes", [])
+
+    # Prepare the prompt for the AI model
+    prompt = (
+        "You are an AI study planner. Based on the user's learning context, "
+        "create a personalized study plan that includes recommendations for reviewing notes, "
+        "attending study events, and preparing for quizzes. "
+        "Provide a structured plan with specific actions and timelines.\n\n"
+        f"Notes: {[note.title for note in notes]}\n"
+        f"Study Events: {[event.title for event in study_events]}\n"
+        f"Quizzes: {[quiz.title for quiz in quizzes]}"
+    )
+
+    client = _build_client()
+    if client is None:
+        return "AI service is unavailable. Unable to generate a study plan."
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are concise, supportive, and specific in your feedback to help the learner understand their quiz question performance."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    return response.choices[0].message.content

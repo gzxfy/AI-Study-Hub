@@ -169,3 +169,44 @@ class QuizQuestionAttempt(db.Model):
 
     def __repr__(self):
         return f'<QuizQuestionAttempt {self.id} for QuizAttempt {self.quiz_attempt_id} Flashcard {self.flashcard_id}>'
+    
+class StudyPlan(db.Model):
+    __tablename__ = 'study_plans'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=True)
+
+    title = db.Column(db.String(200), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='active')  # 'active', 'completed', 'paused'
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class StudyPlanDay(db.Model):
+    __tablename__ = 'study_plan_days'
+    study_plan_id = db.Column(db.Integer, db.ForeignKey('study_plans.id'), primary_key=True)
+    day_number = db.Column(db.Integer, primary_key=True)  # Day number in the study plan (1, 2, 3, ...)
+    date = db.Column(db.DateTime, nullable=False)  # The actual date for this day in the study plan
+    task_json = db.Column(db.JSON, nullable=True)  # JSON field to store tasks for the day, e.g., {"tasks": [{"type": "note", "id": 1}, {"type": "flashcard", "id": 2}]}
+    estimated_time_minutes = db.Column(db.Integer, nullable=True)  # Estimated time to complete tasks for the day
+
+    def __repr__(self):
+        return f'<StudyPlanDay {self.day_number} for StudyPlan {self.study_plan_id}>'
+    
+class StudyPlanProgress(db.Model):
+    __tablename__ = 'study_plan_progress'
+
+    id = db.Column(db.Integer, primary_key=True)
+    study_plan_id = db.Column(db.Integer, db.ForeignKey('study_plans.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    completed_days = db.Column(db.Integer, default=0)  # Number of days completed in the study plan
+    total_days = db.Column(db.Integer, default=0)  # Total number of days in the study plan
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<StudyPlanProgress for StudyPlan {self.study_plan_id} User {self.user_id}>'
