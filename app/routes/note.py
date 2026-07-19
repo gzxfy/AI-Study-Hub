@@ -22,8 +22,9 @@ def create_note():
                 user_id=user_id, 
                 title=request.form.get('title', ''), 
                 content=request.form.get('content', ''), 
-                topic_id=topic_id
-                )
+                topic_id=topic_id,
+                uploaded_pdf_path=request.form.get('note_pdf')
+            )
             flash('Note created successfully!', 'success')
             return redirect(url_for('main.home'))
         except ValueError as ve:

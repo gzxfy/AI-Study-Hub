@@ -42,6 +42,10 @@ class Note(db.Model):
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
+
+    uploaded_pdf_path = db.Column(db.String(500), nullable=True)  # Path to the uploaded PDF file
+    page_count = db.Column(db.Integer, nullable=True)  # Number of pages in the uploaded PDF
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
