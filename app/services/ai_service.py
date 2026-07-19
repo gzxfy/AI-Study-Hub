@@ -1,5 +1,4 @@
 import os
-
 try:
     from openai import OpenAI
 except ModuleNotFoundError:
@@ -16,40 +15,108 @@ def _build_client():
 
     return OpenAI(api_key=api_key)
 
-def ask_ai(question, note_content, conversation_messages):
-    messages=[
-        {"role": "assistant", 
-        "content": (
-            "You are an AI study assistant. "
-            "Use the provided note content as the primary source of information. "
-            "If the answer is not in the note, clearly state that and provide general help."
+def chunk_text(text, chunk_size=1000, overlap=200):
+    """
+    Splits the input text into chunks of specified size with optional overlap.
+    
+    :param text: The input text to be chunked.
+    :param chunk_size: The maximum size of each chunk.
+    :param overlap: The number of characters to overlap between chunks.
+    :return: A list of text chunks.
+    """
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        
+        # Move the start index forward by chunk_size - overlap to create overlap
+        start += chunk_size - overlap
+    
+    return chunks
+
+def select_relevant_chunks(question, note_content, top_k=3):
+    """
+    Selects the most relevant chunks of note content based on the question.
+    
+    :param question: The user's question.
+    :param note_content: The full content of the note.
+    :param top_k: The number of top relevant chunks to return.
+    :return: A list of the most relevant text chunks.
+    """
+    # split the note content into chunks
+    chunks = chunk_text(note_content)
+    question_terms = set(question.lower().split())
+
+    # Score each chunk based on the number of overlapping terms with the question
+    scored=[]
+    for chunk in chunks:
+        chunk_terms = set(chunk.lower().split())
+        # Calculate relevance score based on the number of overlapping terms
+        score = len(question_terms & chunk_terms)
+        scored.append((score, chunk))
+
+    scored.sort(reverse=True, key=lambda item: item[0])  # Sort by score in descending order
+    return [chunk for score, chunk in scored[:top_k] if chunk.strip()]  # Return only non-empty chunks
+
+def build_messages(question, note_content, conversation_messages):
+    """
+    Constructs the message payload for the AI model, including system instructions,
+    note content, previous conversation messages, and the current user question.
+    
+    :param question: The user's current question.
+    :param note_content: The full content of the note.
+    :param conversation_messages: List of previous messages in the conversation.
+    :return: A list of messages formatted for the AI model.
+    """
+
+    relevant_chunks = select_relevant_chunks(question, note_content)
+    context_block = "\n\n".join(
+        f"Source chunk {index + 1}:\n{chunk}"
+        for index, chunk in enumerate(relevant_chunks)
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a study tutor.\n"
+                "First answer using the note.\n"
+                "Then summarize the key point in 1-2 bullets.\n"
+                "Then ask one short practice question.\n"
+                "If the note does not support the answer, say so clearly."
             )
         },
         {
-            "role": "assistant",
-            "content": f"Note content:\n{note_content}"
+            "role": "system",
+            "content": f"Relevant note content:\n{context_block}"
         }
     ]
-    # previous conversation messages
+
+    # Add previous conversation messages
     for msg in conversation_messages:
-        messages.append(
-            {
-                "role": msg.role,
-                "content": msg.content
-            }
-        )
+        messages.append({
+            "role": msg.role,
+            "content": msg.content
+        })
 
-    # current user question
-    messages.append(
-        {
-            "role": "user",
-            "content": question
-        }
-    )
+    # Add the current user question
+    messages.append({
+        "role": "user",
+        "content": question
+    })
 
+    return messages
+
+
+def ask_ai(question, note_content, conversation_messages):
+    messages = build_messages(question, note_content, conversation_messages)
     client = _build_client()
+
     if client is None:
-        return f"AI service is unavailable. Question received: {question}"
+        return "AI service is not available. Please check your API key and dependencies."
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",

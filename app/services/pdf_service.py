@@ -11,5 +11,5 @@ def extract_text_from_pdf(pdf_path):
         text = page.extract_text()
         if text:
             full_text.append(text)
-    db.session.add(len(reader.pages))  # Store the page count in the database
+    
     return "\n".join(full_text)

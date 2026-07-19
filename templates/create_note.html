@@ -8,7 +8,7 @@
   {% endif %}
 {% endwith %}
 
-<form method="POST" action="{{ url_for('note.create_note') }}">
+<form method="POST" action="{{ url_for('note.create_note') }}" enctype="multipart/form-data">
   <label for="title">Title:</label>
   <input type="text" id="title" name="title" value="{{ title }}" required>
   <label for="content">Content:</label>

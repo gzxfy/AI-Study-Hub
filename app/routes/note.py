@@ -23,7 +23,7 @@ def create_note():
                 title=request.form.get('title', ''), 
                 content=request.form.get('content', ''), 
                 topic_id=topic_id,
-                uploaded_pdf_path=request.form.get('note_pdf')
+                uploaded_pdf_path=request.files.get('note_pdf', None)  # Get the uploaded PDF file if provided
             )
             flash('Note created successfully!', 'success')
             return redirect(url_for('main.home'))

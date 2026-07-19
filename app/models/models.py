@@ -44,7 +44,6 @@ class Note(db.Model):
     content = db.Column(db.Text, nullable=False)
 
     uploaded_pdf_path = db.Column(db.String(500), nullable=True)  # Path to the uploaded PDF file
-    page_count = db.Column(db.Integer, nullable=True)  # Number of pages in the uploaded PDF
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
