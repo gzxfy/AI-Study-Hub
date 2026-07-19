@@ -4,6 +4,7 @@ from app import db
 from datetime import datetime
 
 from app.utils.validation_helpers import validate_study_difficulty
+from app.services.study_event import log_study_event
 
 def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None):
     validate_study_difficulty(difficulty, card_count)
@@ -23,7 +24,7 @@ def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priorit
     cards = load_flashcards_for_study(user_id=user_id, 
                                       note_id=note_id, 
                                       difficulty=difficulty,
-                                      card_count=None)
+                                      card_count=card_count)
     if priority and cards:
         cards_id = [card.id for card in cards]
         progress_rows = FlashcardProgress.query.filter(FlashcardProgress.user_id==user_id, FlashcardProgress.flashcard_id.in_(cards_id)).all()
@@ -52,6 +53,9 @@ def review_flashcard(user_id, flashcard_id, marked_correctly):
     if not progress:
         progress = FlashcardProgress(user_id=user_id, flashcard_id=flashcard_id, times_seen=0, times_correct=0, streak=0, progress=0)
         db.session.add(progress)  # Add the new progress record to the session
+    
+    log_study_event(user_id=user_id, flashcard_id=flashcard_id, is_correct=marked_correctly, source='study_mode')
+    db.session.commit()  # Commit the study event to ensure it's saved before proceeding
     
     progress.times_seen += 1
     if marked_correctly:

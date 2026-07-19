@@ -1,8 +1,8 @@
 import app.utils.validation_helpers as validation_helpers
 from app.models.models import StudyEvent, db
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
-def log_study_event(user_id, flashcard_id, is_correct, source=None):
+def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=None):
     # Validate inputs
     validation_helpers.validate_study_event_data(user_id, flashcard_id, is_correct, source)
 
@@ -11,13 +11,12 @@ def log_study_event(user_id, flashcard_id, is_correct, source=None):
         user_id=user_id,
         flashcard_id=flashcard_id,
         is_correct=is_correct,
-        source=source
+        source=source,
+        studied_at=studied_at or datetime.utcnow()  # Use UTC time for consistency
     )
 
     # Add the study event to the session and commit
     db.session.add(study_event)
-    db.session.commit()
-
     return study_event
 
 def get_study_events(user_id, flashcard_id=None):
@@ -28,47 +27,54 @@ def get_study_events(user_id, flashcard_id=None):
 
 def cards_studied_today(user_id):
     today = datetime.utcnow().date()
-    return StudyEvent.query.filter(
-        StudyEvent.user_id == user_id,
-        db.func.date(StudyEvent.studied_at) == today
-    ).count()
+    return (
+        db.session.query(db.func.count(db.distinct(StudyEvent.flashcard_id)))
+        .filter(
+            StudyEvent.user_id == user_id,
+            db.func.date(StudyEvent.studied_at) == today
+        )
+        .scalar()
+    )
 
+# this was made with the help of chatgpt, it is not tested yet
 def current_streak(user_id):
-    # Get all study events for the user, ordered by date
-    events = StudyEvent.query.filter_by(user_id=user_id).order_by(StudyEvent.studied_at.desc()).all()
-    
-    streak = 0
-    last_date = None
-    
-    for event in events:
-        event_date = event.studied_at.date()
-        if last_date is None:
-            last_date = event_date
+    # Get all distinct study event dates for the user, ordered from most recent to oldest
+    raw_dates = (
+        db.session.query(db.func.date(StudyEvent.studied_at))
+        .filter(StudyEvent.user_id == user_id)
+        .distinct()
+        .order_by(db.func.date(StudyEvent.studied_at).desc())
+        .all()
+    )
+
+    if not raw_dates:
+        return 0
+
+    # Normalize DB output to Python date objects
+    dates = []
+    for row in raw_dates:
+        value = row[0]
+        if isinstance(value, str):
+            dates.append(datetime.strptime(value, "%Y-%m-%d").date())
+        elif isinstance(value, datetime):
+            dates.append(value.date())
+        elif isinstance(value, date):
+            dates.append(value)
+
+    if not dates:
+        return 0
+
+    # Check if the most recent date is today or yesterday; if not, streak is 0
+    today = datetime.utcnow().date()
+    if dates[0] not in (today, today - timedelta(days=1)):
+        return 0
+
+    # Calculate the streak by iterating through the dates
+    streak = 1
+    for i in range(1, len(dates)):
+        if (dates[i - 1] - dates[i]).days == 1:
             streak += 1
         else:
-            # Check if the event date is the day before the last date
-            if (last_date - event_date).days == 1:
-                streak += 1
-                last_date = event_date
-            elif (last_date - event_date).days > 1:
-                break  # Streak is broken
-    
+            break
+
     return streak
-
-
-def average_accuracy(user_id):
-    events = StudyEvent.query.filter_by(user_id=user_id).all()
-    if not events:
-        return 0.0
-    correct_count = sum(1 for event in events if event.is_correct)
-    return (correct_count / len(events)) * 100
-
-def cards_mastered(user_id):
-    # A card is considered mastered if it has been answered correctly at least 5 times
-    mastered_flashcards = db.session.query(StudyEvent.flashcard_id).filter_by(user_id=user_id, is_correct=True).group_by(StudyEvent.flashcard_id).having(db.func.count(StudyEvent.id) >= 5).all()
-    return len(mastered_flashcards)
-
-def cards_needing_review(user_id):
-    # A card needs review if it has a low accuracy rate 
-    needing_review_flashcards = db.session.query(StudyEvent.flashcard_id).filter_by(user_id=user_id, is_correct=False).group_by(StudyEvent.flashcard_id).having(db.func.count(StudyEvent.id) > 4).all()
-    return len(needing_review_flashcards)

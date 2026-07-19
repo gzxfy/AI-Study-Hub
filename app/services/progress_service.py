@@ -1,5 +1,5 @@
-import app.utils.validation_helpers as validation_helpers
 from app.models.models import FlashcardProgress
+import app.services.study_event as study_event_service
 
 def get_flashcard_progress(user_id, flashcard_id):
     return FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard_id).first()
@@ -13,13 +13,16 @@ def get_user_progress(user_id):
     cards_mastered = sum(1 for p in records if p.times_seen > 5 and (p.times_correct / p.times_seen) >= 0.8)
     cards_needing_reviewing = sum(1 for p in records if p.times_seen > 0 and (p.times_correct / p.times_seen) < 0.6)
     
+    cards_studied_today = study_event_service.cards_studied_today(user_id)
+    streak = study_event_service.current_streak(user_id)
+    
     return {
         "total_cards": len(records),
         "total_reviewed": total_reviewed,
         "average_accuracy": average_accuracy,
         "cards_mastered": cards_mastered,
-        "cards_needing_reviewing": cards_needing_reviewing
-        # "current_streak": max(p.current_streak for p in records) if records else 0
+        "cards_needing_reviewing": cards_needing_reviewing,
+        "cards_studied_today": cards_studied_today,
+        "current_streak": streak
     }
 
-# Function to get the current streak for a user will be implemented during the study session feature development.
