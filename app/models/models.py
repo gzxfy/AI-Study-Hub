@@ -121,6 +121,7 @@ class FlashcardProgress(db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # e.g., timestamp of the last time the flashcard was seen
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+# this is for tracking study events, like when a user studies a flashcard, whether they got it right or wrong, and when it happened. This can be useful for analytics, spaced repetition algorithms, and understanding user behavior over time.
 class StudyEvent(db.Model):
     __tablename__ = 'study_events'
 
@@ -178,9 +179,7 @@ class StudyPlan(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
-    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=True)
-
+    
     title = db.Column(db.String(200), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
@@ -194,7 +193,7 @@ class StudyPlanDay(db.Model):
     study_plan_id = db.Column(db.Integer, db.ForeignKey('study_plans.id'), primary_key=True)
     day_number = db.Column(db.Integer, primary_key=True)  # Day number in the study plan (1, 2, 3, ...)
     date = db.Column(db.DateTime, nullable=False)  # The actual date for this day in the study plan
-    task_json = db.Column(db.JSON, nullable=True)  # JSON field to store tasks for the day, e.g., {"tasks": [{"type": "note", "id": 1}, {"type": "flashcard", "id": 2}]}
+    task_json = db.Column(db.JSON, nullable=True)  # JSON field to store tasks for the day, e.g., {"tasks": [{"type": "note", "id": 1}, {"type": "flashcard", "id": 2}, {"type": "quiz", "id": 3}]}
     estimated_time_minutes = db.Column(db.Integer, nullable=True)  # Estimated time to complete tasks for the day
 
     def __repr__(self):
