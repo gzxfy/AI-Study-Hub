@@ -50,6 +50,14 @@ def generate_and_save_study_plan(user_id, days_until_exam=7, start_date=None):
     learning_context = collect_user_learning_context(user_id)
     plan_data = generate_study_plan_with_AI(user_id, learning_context, days_until_exam=days_until_exam)
 
+    if not isinstance(plan_data, dict):
+        raise ValueError("Study plan generation failed: invalid AI payload.")
+
+    if "days" not in plan_data or not isinstance(plan_data["days"], list):
+        raise ValueError("Study plan generation failed: missing days array.")
+    if len(plan_data["days"]) != days_until_exam:
+        raise ValueError(f"Study plan generation failed: expected {days_until_exam} days.")
+    
     start = start_date or datetime.utcnow()
     end = start + timedelta(days=days_until_exam - 1)
 
@@ -92,3 +100,102 @@ def generate_and_save_study_plan(user_id, days_until_exam=7, start_date=None):
 
     db.session.commit()
     return plan
+
+def get_current_study_plan(user_id):
+    """
+    Retrieves the current active study plan for the user.
+
+    Args:
+        user_id (int): The ID of the user.
+    """
+    current_plan = StudyPlan.query.filter_by(user_id=user_id, status="active").first()
+    if not current_plan:
+        return None
+    return current_plan
+    
+def complete_study_plan_day(user_id, day_number):
+    """
+    Marks a specific day in the user's study plan as completed.
+
+    Args:
+        user_id (int): The ID of the user.
+        day_number (int): The day number to mark as completed.
+    """
+    current_plan = StudyPlan.query.filter_by(user_id=user_id, status="active").first()
+    if not current_plan:
+        raise ValueError("No active study plan found.")
+
+    day = StudyPlanDay.query.filter_by(study_plan_id=current_plan.id, day_number=day_number).first()
+    if not day:
+        raise ValueError(f"Day {day_number} not found in the current study plan.")
+
+    if day.completed:
+        raise ValueError(f"Day {day_number} is already marked as completed.")
+
+    day.completed = True
+    progress = StudyPlanProgress.query.filter_by(study_plan_id=current_plan.id, user_id=user_id).first()
+    progress.completed_days += 1
+
+    if progress.completed_days >= progress.total_days:
+        current_plan.status = "completed"
+
+    db.session.commit()
+
+    return {
+        "completed_days": progress.completed_days,
+        "total_days": progress.total_days,
+        "plan_status": current_plan.status
+    }
+def delete_study_plan(user_id, study_plan_id=None):
+    """
+    Deletes the current active study plan for the user.
+
+    Args:
+        user_id (int): The ID of the user.
+    """
+    if study_plan_id:
+        try:
+            study_plan_id = int(study_plan_id)
+        except (TypeError, ValueError):
+            raise ValueError("study_plan_id must be a valid integer.")
+        current_plan = StudyPlan.query.filter_by(user_id=user_id, id=study_plan_id).first()
+    else:
+        current_plan = StudyPlan.query.filter_by(user_id=user_id, status="active").first()
+    if not current_plan:
+        raise ValueError("No active study plan found.")
+
+    # Delete associated days and progress
+    StudyPlanDay.query.filter_by(study_plan_id=current_plan.id).delete()
+    StudyPlanProgress.query.filter_by(study_plan_id=current_plan.id).delete()
+
+    # Delete the study plan itself
+    db.session.delete(current_plan)
+    db.session.commit()
+
+def get_study_plan_progress(user_id, study_plan_id=None):
+    """
+    Retrieves the progress of the current active study plan for the user.
+
+    Args:
+        user_id (int): The ID of the user.
+    """
+    if study_plan_id:
+        try:
+            study_plan_id = int(study_plan_id)
+        except (TypeError, ValueError):
+            raise ValueError("study_plan_id must be a valid integer.")
+        current_plan = StudyPlan.query.filter_by(user_id=user_id, id=study_plan_id).first()
+    else:
+        current_plan = StudyPlan.query.filter_by(user_id=user_id, status="active").first()
+    if not current_plan:
+        raise ValueError("No active study plan found.")
+
+    progress = StudyPlanProgress.query.filter_by(study_plan_id=current_plan.id, user_id=user_id).first()
+    if not progress:
+        raise ValueError("Progress record not found for the current study plan.")
+
+    return {
+        "completed_days": progress.completed_days,
+        "total_days": progress.total_days,
+        "plan_status": current_plan.status
+    }

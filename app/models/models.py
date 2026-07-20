@@ -181,6 +181,7 @@ class StudyPlan(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     title = db.Column(db.String(200), nullable=False)
+    completed = db.Column(db.Boolean, nullable=False, default=False)  # Track if this specific day is finished
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='active')  # 'active', 'completed', 'paused'
@@ -195,6 +196,7 @@ class StudyPlanDay(db.Model):
     date = db.Column(db.DateTime, nullable=False)  # The actual date for this day in the study plan
     task_json = db.Column(db.JSON, nullable=True)  # JSON field to store tasks for the day, e.g., {"tasks": [{"type": "note", "id": 1}, {"type": "flashcard", "id": 2}, {"type": "quiz", "id": 3}]}
     estimated_time_minutes = db.Column(db.Integer, nullable=True)  # Estimated time to complete tasks for the day
+    completed = db.Column(db.Boolean, default=False, nullable=False)  # Whether the tasks for this day have been completed
 
     def __repr__(self):
         return f'<StudyPlanDay {self.day_number} for StudyPlan {self.study_plan_id}>'
