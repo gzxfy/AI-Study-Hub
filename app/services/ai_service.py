@@ -1,4 +1,8 @@
 import os
+import json
+from app.models.models import StudyPlan
+
+
 try:
     from openai import OpenAI
 except ModuleNotFoundError:
@@ -175,3 +179,95 @@ def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedbac
     )
     
     return response.choices[0].message.content
+
+def generate_study_plan_with_AI(user_id, learning_context, days_until_exam=7):
+    """Generates a personalized study plan for the user based on their learning context using AI.
+    param user_id: The ID of the user for whom the study plan is being generated.
+    param learning_context: A dictionary containing the user's learning context, including notes, flashcards, and quizzes.
+    param days_until_exam: The number of days until the user's exam.
+    return: A string containing the generated study plan.
+    """
+    notes = learning_context.get("notes", [])
+    quizzes = learning_context.get("quizzes", [])
+    flashcards = learning_context.get("flashcards", [])
+    topics = learning_context.get("topics", [])
+
+    notes_summary = "\n".join(
+        f"- {n.title}: {(n.content or '')[:120]}"
+        for n in notes[:20]
+    ) or "No notes available."
+
+    quizzes_summary = "\n".join(
+        f"- Quiz {q.id}: score={q.score}, status={q.status}"
+        for q in quizzes[:20]
+    ) or "No quizzes available."
+
+    flashcards_summary = "\n".join(
+        f"- Q: {(f.question or '')[:80]} | difficulty={f.difficulty or 'unknown'}"
+        for f in flashcards[:30]
+    ) or "No flashcards available."
+
+    topics_summary = ", ".join(topics) if topics else "No specific topics available."
+
+
+    prompt = (
+        f""" 
+        You are an AI study planner.
+        Create a {days_until_exam}-day study plan as valid JSON only.
+        No markdown. No explanation text.
+
+        Notes:
+        {notes_summary}
+        Flashcards:
+        {flashcards_summary}
+        Quizzes:
+        {quizzes_summary}
+        Topics:
+        {topics_summary}
+
+        return JSON with this shape:
+        {{ 
+            "title": "string",
+            "days": [
+                {{
+                "day_number": 1,
+                "focus": "string",
+                "estimated_time_minutes": 60,
+                "tasks": [
+                    {{ "type": "note_review | flashcard_review | quiz | summary",
+                    "description": "string" 
+                    }}
+                ],
+            }},
+        }}
+        Rules:
+        - Return exactly {days_until_exam} days
+        - day_number must be 1 through {days_until_exam}
+        - each day must have at least 2 tasks
+        - last 2 days emphasize review and quiz practice
+        """
+    )
+
+    client = _build_client()
+    if client is None:
+        return "AI service is not available. Please check your API key and dependencies."
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a strict JSON generator for study plans."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    raw_content = (response.choices[0].message.content or "").strip()
+    try:
+        plan_data = json.loads(raw_content)
+    except json.JSONDecodeError:
+        raise ValueError(f"AI returned invalid JSON for study plan.")
+    
+    days = plan_data.get("days", [])
+    if len(days) != days_until_exam:
+        raise ValueError(f"AI returned {len(days)} days, expected {days_until_exam}.")
+
+    return plan_data
