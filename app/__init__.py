@@ -27,7 +27,7 @@ def create_app(test_config=None):
     from .main import main_bp
     from .routes.note import note_bp
     from .routes.topics import topic_bp
-    from .routes.ai_assisstant import ai_assisstant_bp
+    from .routes.ai_assistant import ai_assistant_bp
     from .routes.flashcard import flashcard_bp
     from .routes.progress import progress_bp
     from .routes.study_mode import study_mode_bp
@@ -37,7 +37,7 @@ def create_app(test_config=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(note_bp)
     app.register_blueprint(topic_bp)
-    app.register_blueprint(ai_assisstant_bp)
+    app.register_blueprint(ai_assistant_bp)
     app.register_blueprint(flashcard_bp)
     app.register_blueprint(progress_bp)
     app.register_blueprint(study_mode_bp)
