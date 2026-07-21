@@ -271,3 +271,14 @@ def generate_study_plan_with_AI(user_id, learning_context, days_until_exam=7):
         raise ValueError(f"AI returned {len(days)} days, expected {days_until_exam}.")
 
     return plan_data
+
+def ask_ai_with_topics(user_id, question, topic_notes, conversation_messages):
+    """
+    Build one text context from all notes in the topic, then reuse the normal AI path.
+    """
+    topic_context = "\n\n".join(
+        f"Note {note.id} - {note.title}\n{note.content}"
+        for note in topic_notes
+    ) or "No topic notes available."
+
+    return ask_ai(question, topic_context, conversation_messages)
