@@ -16,6 +16,10 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def home():
     user_id = session.get("user_id")  # Get the user_id from the session
+    if user_id is None:
+        # Anonymous users should see the landing page without triggering user-scoped note queries.
+        return render_template('home.html', notes=[], recent_notes=[], note_count=0)
+
     notes = Note.query.filter_by(user_id=user_id).all()  # Get all notes for the logged-in user
 
     recent_notes = sorted(notes, key=lambda x: x.id, reverse=True)[:5]  # Get the 5 most recent notes
