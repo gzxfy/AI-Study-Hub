@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Study Hub{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('main.home') }}">AI Study Hub</a>
+            {% if session.get('user_id') %}
+                <ul>
+                    <li><a href="{{ url_for('note.create_note') }}">Create Note</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                </ul>
+            {% else %}
+                <ul>
+                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+                </ul>
+            {% endif %}
+        </nav>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+        <p>&copy; 2026 AI Study Hub</p>
+    </footer>
+</body>
+</html>

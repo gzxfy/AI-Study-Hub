@@ -1,13 +1,11 @@
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
+{% extends "base.html" %}
+{% block title %}Create Note - AI Study Hub{% endblock %}
 
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='create_note.css') }}">
+{% endblock %}
+{% block content %}
+<h1>Create Note</h1>
 <form method="POST" action="{{ url_for('note.create_note') }}" enctype="multipart/form-data">
   <label for="title">Title:</label>
   <input type="text" id="title" name="title" value="{{ title }}" required>
@@ -27,3 +25,4 @@
   <p>Must be a PDF file.</p>
   <button type="submit">Create Note</button>
 </form>
+{% endblock %}

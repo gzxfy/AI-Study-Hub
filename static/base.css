@@ -1,0 +1,40 @@
+/* Base CSS styles for the application */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+header.site-header {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem;
+}
+
+nav.sidebar-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    width: auto;
+    gap: 1rem;
+}
+
+nav.sidebar-nav a {
+    color: #fff;
+    text-decoration: none;
+}
+
+main {
+    padding: 2rem;
+}
+
+footer.site-footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
