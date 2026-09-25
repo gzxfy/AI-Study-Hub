@@ -12,7 +12,9 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(pattern, email):
         raise ValueError("Invalid email format.")
-    
+    # This doesnt return anything, but if the email is valid, it will pass without raising an exception.
+    return True
+
 def validate_username(username):
     if username is None or username.strip() == "":
         raise ValueError("Username is required.")
@@ -52,10 +54,9 @@ def validate_user_data_for_registration(username, email, password, confirm_passw
         raise ValueError("Passwords do not match.")
     return True
 
-def validate_user_data_for_login(email, password):
+def validate_user_data_for_login(email):
     email = (email or "").strip()
     validate_email(email)
-    validate_password(password)
     return True
 
 def validate_if_username_or_email_exists(username, email):
