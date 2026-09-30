@@ -10,6 +10,7 @@ note_bp = Blueprint('note', __name__)
 @csrf.exempt  # Exempt the create route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the create route
 def create_note():
+    """Display the note form or create a note with optional PDF content."""
     user_id = session.get("user_id")  # Retrieve the user_id from the session
     topics = Topic.query.filter_by(user_id=user_id).all()
 
@@ -36,6 +37,7 @@ def create_note():
 @csrf.exempt  # Exempt the view route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the view note route
 def view_note(note_id):
+    """Display a note after the note service verifies user ownership."""
     try:
         note = note_service.view_note(note_id, session.get("user_id"))
     except ValueError as ve:
@@ -48,6 +50,7 @@ def view_note(note_id):
 @csrf.exempt  # Exempt the delete route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the delete note route
 def delete_note(note_id):
+    """Delete an owned note and return to the home page with a status."""
     try:
         note_service.delete_note(note_id, session.get("user_id"))
         flash('Note deleted successfully!', 'success')
@@ -59,6 +62,7 @@ def delete_note(note_id):
 @csrf.exempt  # Exempt the edit route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the edit route
 def edit_note(note_id):
+    """Display the edit form or save changes to an owned study note."""
     if request.method == 'POST':
         try:
             new_note = note_service.edit_note(

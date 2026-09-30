@@ -4,6 +4,7 @@ from app.models.models import User
 import app.utils.validation_helpers as validation_helpers
 
 def register_user(username, email, password, confirm_password):
+    """Validate registration details, hash the password, and create a user."""
     #basic validation
     validation_helpers.validate_user_data_for_registration(username, email, password, confirm_password)
 
@@ -22,6 +23,7 @@ def register_user(username, email, password, confirm_password):
     return new_user
 
 def login_user(email, password):
+    """Validate credentials and return the matching authenticated user."""
     #basic validation
     validation_helpers.validate_email(email)
 

@@ -6,6 +6,7 @@ from app import csrf
 quiz_mode_bp = Blueprint('quiz_mode', __name__)
 
 def require_int(value, name):
+    """Parse a required quiz identifier and reject invalid integer input."""
     if value is None:
         raise ValueError(f"{name} is required and must be a positive integer")
     try:
@@ -18,6 +19,7 @@ def require_int(value, name):
 @csrf.exempt
 @validation_helpers.login_required
 def start_quiz():
+    """Create a quiz attempt and return its selected flashcard questions."""
     data = request.get_json() or {}
     try:
         note_id = require_int(data.get('note_id', None), 'note_id')
@@ -55,6 +57,7 @@ def start_quiz():
 @csrf.exempt
 @validation_helpers.login_required
 def get_current_quiz_question():
+    """Return the current question or completion state for a quiz attempt."""
     quiz_attempt_id = require_int(request.args.get('quiz_attempt_id'), 'quiz_attempt_id')
     user_id = session['user_id']
     try:
@@ -85,6 +88,7 @@ def get_current_quiz_question():
 @csrf.exempt
 @validation_helpers.login_required
 def submit_quiz_answer():
+    """Grade a quiz answer and return the next question and updated score."""
     data = request.get_json() or {}
     quiz_attempt_id = require_int(data.get('quiz_attempt_id'), 'quiz_attempt_id')
     flashcard_id = require_int(data.get('flashcard_id'), 'flashcard_id')
@@ -119,6 +123,7 @@ def submit_quiz_answer():
 @csrf.exempt
 @validation_helpers.login_required
 def finish_quiz():
+    """Complete a quiz attempt and return its score summary."""
     data = request.get_json()
     quiz_attempt_id = require_int(data.get('quiz_attempt_id'), 'quiz_attempt_id')
 
@@ -134,6 +139,7 @@ def finish_quiz():
 @csrf.exempt
 @validation_helpers.login_required
 def review_quiz_question():
+    """Return one answered quiz question with optional AI explanation."""
     quiz_attempt_id = require_int(request.args.get('quiz_attempt_id'), 'quiz_attempt_id')
     flashcard_id = require_int(request.args.get('flashcard_id'), 'flashcard_id')
     ask_ai = request.args.get('ask_ai', 'false').lower() == 'true'
@@ -150,6 +156,7 @@ def review_quiz_question():
 @csrf.exempt
 @validation_helpers.login_required
 def review_quiz_summary():
+    """Return the quiz review summary with optional AI feedback per answer."""
     quiz_attempt_id = require_int(request.args.get('quiz_attempt_id'), 'quiz_attempt_id')
     ask_ai = request.args.get('ask_ai', 'false').lower() == 'true'
     feedback = request.args.get('feedback', '')

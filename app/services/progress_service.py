@@ -2,9 +2,11 @@ from app.models.models import FlashcardProgress
 import app.services.study_event as study_event_service
 
 def get_flashcard_progress(user_id, flashcard_id):
+    """Find one user's review statistics for a specific flashcard."""
     return FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard_id).first()
 
 def get_user_progress(user_id):
+    """Aggregate accuracy, mastery, daily activity, and streak for the dashboard."""
     records = FlashcardProgress.query.filter_by(user_id=user_id).all()
     
     total_reviewed = sum(p.times_seen for p in records) 

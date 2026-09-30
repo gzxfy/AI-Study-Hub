@@ -11,6 +11,7 @@ ai_assistant_bp = Blueprint('ai_assistant', __name__)
 @csrf.exempt  # Exempt the AI assistant route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the AI assistant route
 def ai_assistant(note_id):
+    """Render a note-specific AI chat and persist submitted exchanges."""
     note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
 
     try:
@@ -45,6 +46,7 @@ def ai_assistant(note_id):
 @csrf.exempt
 @login_required
 def ai_assistant_with_topics(note_id):
+    """Chat about a note using related notes from its topic as context."""
     note = Note.query.filter_by(id=note_id, user_id=session.get("user_id")).first()
 
     if not note:

@@ -4,6 +4,7 @@ import app.utils.validation_helpers as validation_helpers
 import app.services.pdf_service as pdf_service
 
 def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
+    """Extract optional PDF text, validate it, and save a study note."""
     extracted_text = ""
     uploaded_pdf_name = None
 
@@ -28,6 +29,7 @@ def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
     return new_note
 
 def view_note(note_id, user_id):
+    """Return a note only after confirming it exists and belongs to the user."""
     note = Note.query.get(note_id)
     if not note:
         raise ValueError("Note not found!")
@@ -36,6 +38,7 @@ def view_note(note_id, user_id):
     return note
 
 def delete_note(note_id, user_id):
+    """Delete a note after verifying that the requesting user owns it."""
     note = Note.query.get(note_id)
     if not note:
         raise ValueError("Note not found!")
@@ -45,6 +48,7 @@ def delete_note(note_id, user_id):
     db.session.commit()
 
 def edit_note(note_id, user_id, title, content):
+    """Validate and persist new title and content for an owned note."""
     note = Note.query.get(note_id)
     if not note:
         raise ValueError("Note not found!")

@@ -11,6 +11,7 @@ topic_bp = Blueprint('topic', __name__)
 @csrf.exempt  # Exempt the topic create route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the topic create route
 def topic_create():
+    """Display the topic form or create a topic for the signed-in user."""
     user_id = session.get("user_id")  # Retrieve the user_id from the session
     if request.method == 'POST':
         title = request.form.get('title')
@@ -29,6 +30,7 @@ def topic_create():
 @csrf.exempt  # Exempt the create route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the delete topic route
 def delete_topic(topic_id):
+    """Delete an owned study topic and return to the home page."""
     try:
         topic_service.delete_topic(topic_id, session.get("user_id"))
         flash('Topic deleted successfully!', 'success')
@@ -41,6 +43,7 @@ def delete_topic(topic_id):
 @csrf.exempt  # Exempt the edit note route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the edit note route
 def edit_topic(topic_id):
+    """Display the topic edit form or save changes to an owned topic."""
     if request.method == 'POST':
         try:
             topic_service.edit_topic(
@@ -64,6 +67,7 @@ def edit_topic(topic_id):
 @csrf.exempt  # Exempt the topic view route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the topic view route
 def topic_view(topic_id):
+    """Display a topic and its notes after verifying user ownership."""
     try:
         topic = topic_service.topic_view(topic_id, session.get("user_id"))
         notes = Note.query.filter_by(topic_id=topic_id).all()  # Fetch all notes associated with the topic

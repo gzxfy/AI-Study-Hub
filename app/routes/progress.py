@@ -8,6 +8,7 @@ progress_bp = Blueprint('progress', __name__)
 @progress_bp.route('/progress')
 @login_required
 def progress_dashboard():
+    """Render the signed-in user's flashcard study progress dashboard."""
     user_id = session.get('user_id')
     progress = progress_service.get_user_progress(user_id)
     return render_template('progress_dashboard.html', progress=progress)
@@ -15,6 +16,7 @@ def progress_dashboard():
 @progress_bp.route('/user_progress')
 @login_required
 def user_progress():
+    """Render the same progress summary through the legacy progress route."""
     user_id = session.get('user_id')
     progress = progress_service.get_user_progress(user_id)
     return render_template('progress_dashboard.html', progress=progress)

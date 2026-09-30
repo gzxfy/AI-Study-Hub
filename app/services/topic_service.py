@@ -4,6 +4,7 @@ import app.utils.validation_helpers as validation_helpers
 
 
 def create_topic(user_id, title, description, color):
+    """Validate and save a topic that organizes a user's study materials."""
     validation_helpers.validate_topic_data(title, description, color)
     new_topic = Topic(user_id=user_id, title=title, description=description, color=color)
     db.session.add(new_topic)
@@ -11,6 +12,7 @@ def create_topic(user_id, title, description, color):
     return new_topic
 
 def delete_topic(topic_id, user_id):
+    """Delete a topic after confirming that the requesting user owns it."""
     topic = Topic.query.get_or_404(topic_id)
     if not topic:
         raise ValueError("Topic not found!")
@@ -20,6 +22,7 @@ def delete_topic(topic_id, user_id):
     db.session.commit()
 
 def edit_topic(topic_id, user_id, title, description, color):
+    """Validate and update the title, description, and color of an owned topic."""
     topic = Topic.query.get_or_404(topic_id)
     if not topic:
         raise ValueError("Topic not found!")
@@ -33,6 +36,7 @@ def edit_topic(topic_id, user_id, title, description, color):
     return topic
 
 def topic_view(topic_id, user_id):
+    """Return a topic after verifying that it belongs to the requesting user."""
     topic = Topic.query.get_or_404(topic_id)
     if not topic:
         raise ValueError("Topic not found!")

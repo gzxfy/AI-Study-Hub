@@ -9,6 +9,7 @@ flashcard_bp = Blueprint('flashcard', __name__)
 @csrf.exempt
 @login_required
 def create_flashcard():
+    """Create a flashcard for the signed-in user and selected note."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     topic_id = request.form.get('topic_id')
     if not topic_id:
@@ -33,6 +34,7 @@ def create_flashcard():
 @flashcard_bp.route('/flashcard/<int:flashcard_id>', methods=['GET'])
 @login_required
 def view_flashcard(flashcard_id):
+    """Display one flashcard after checking that it belongs to the user."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     flashcard = flashcard_service.get_flashcard_by_id(flashcard_id, user_id=user_id)
     if not flashcard or flashcard.user_id != user_id:
@@ -43,6 +45,7 @@ def view_flashcard(flashcard_id):
 @flashcard_bp.route('/flashcards', methods=['GET'])
 @login_required
 def view_all_flashcards():
+    """Display all flashcards owned by the signed-in user."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     flashcards = flashcard_service.get_all_flashcards(user_id)  # Get flashcards only for the logged-in user
     return render_template('view_all_flashcards.html', flashcards=flashcards)
@@ -51,6 +54,7 @@ def view_all_flashcards():
 @csrf.exempt
 @login_required
 def edit_flashcard(flashcard_id):
+    """Display or update a user's flashcard and its review attributes."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     flashcard = flashcard_service.get_flashcard_by_id(flashcard_id, user_id=user_id)
     if not flashcard or flashcard.user_id != user_id:
@@ -76,6 +80,7 @@ def edit_flashcard(flashcard_id):
 @csrf.exempt
 @login_required
 def delete_flashcard(flashcard_id):
+    """Delete an owned flashcard and report the result to the user."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     try:
         flashcard_service.delete_flashcard(flashcard_id, user_id)

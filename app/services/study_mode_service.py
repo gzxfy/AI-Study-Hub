@@ -7,6 +7,7 @@ from app.utils.validation_helpers import validate_study_difficulty
 from app.services.study_event import log_study_event
 
 def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None):
+    """Select and shuffle a user's note flashcards using optional study filters."""
     validate_study_difficulty(difficulty, card_count)
     
     query = Flashcard.query.filter_by(user_id=user_id, note_id=note_id)
@@ -21,6 +22,7 @@ def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None
     return cards
 
 def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priority=None):
+    """Choose study cards and optionally prioritize cards with weaker mastery."""
     cards = load_flashcards_for_study(user_id=user_id, 
                                       note_id=note_id, 
                                       difficulty=difficulty,
@@ -31,6 +33,7 @@ def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priorit
         progress_by_card = {p.flashcard_id: p for p in progress_rows}
 
         def weakness_key(card):
+            """Sort unseen or low-accuracy cards ahead of well-known cards."""
             p = progress_by_card.get(card.id)
             if not p or p.times_seen == 0:
                 return (0.0, 0)
@@ -45,6 +48,7 @@ def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priorit
 
 
 def review_flashcard(user_id, flashcard_id, marked_correctly):
+    """Record a flashcard result and update the user's mastery statistics."""
     flashcard = Flashcard.query.filter_by(id=flashcard_id, user_id=user_id).first()
     if not flashcard:
         raise ValueError("Flashcard not found.")
@@ -70,6 +74,7 @@ def review_flashcard(user_id, flashcard_id, marked_correctly):
     return progress
 
 def end_study_mode(user_id, reviewed_results):
+    """Summarize reviewed-card count and accuracy for a study session."""
     reviewed_count = len(reviewed_results)
     correct_count = sum(1 for result in reviewed_results if result.get("correct"))
     accuracy = round((correct_count / reviewed_count) * 100, 2) if reviewed_count > 0 else 0

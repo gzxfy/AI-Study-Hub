@@ -3,6 +3,7 @@ from app.models.models import StudyEvent, db
 from datetime import date, datetime, timedelta
 
 def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=None):
+    """Validate and stage a timestamped flashcard study event."""
     # Validate inputs
     validation_helpers.validate_study_event_data(user_id, flashcard_id, is_correct, source)
 
@@ -20,12 +21,14 @@ def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=N
     return study_event
 
 def get_study_events(user_id, flashcard_id=None):
+    """List a user's study events, optionally filtered to one flashcard."""
     query = StudyEvent.query.filter_by(user_id=user_id)
     if flashcard_id:
         query = query.filter_by(flashcard_id=flashcard_id)
     return query.all()
 
 def cards_studied_today(user_id):
+    """Count distinct flashcards studied by the user today."""
     today = datetime.utcnow().date()
     return (
         db.session.query(db.func.count(db.distinct(StudyEvent.flashcard_id)))
@@ -38,6 +41,7 @@ def cards_studied_today(user_id):
 
 # this was made with the help of chatgpt, it is not tested yet
 def current_streak(user_id):
+    """Count consecutive study days ending today or yesterday for the user."""
     # Get all distinct study event dates for the user, ordered from most recent to oldest
     raw_dates = (
         db.session.query(db.func.date(StudyEvent.studied_at))

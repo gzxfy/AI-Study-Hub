@@ -6,6 +6,7 @@ from app.models.models import User
 
 # Validation helper functions for email and password
 def validate_email(email):
+    """Check email presence and format for account registration and login."""
     if email is None or email.strip() == "":
         raise ValueError("Email is required.")
     
@@ -16,6 +17,7 @@ def validate_email(email):
     return True
 
 def validate_username(username):
+    """Enforce username presence and length rules for account creation."""
     if username is None or username.strip() == "":
         raise ValueError("Username is required.")
     if len(username) < 3:
@@ -25,6 +27,7 @@ def validate_username(username):
     return True
     
 def validate_password(password):
+    """Enforce the password strength policy used during registration."""
     if password is None or password.strip() == "":
         raise ValueError("Password is required.")
     if len(password) < 8:
@@ -40,11 +43,13 @@ def validate_password(password):
     return True
 
 def validate_email_and_password(email, password):
+    """Validate email format and password strength for account credentials."""
     validate_email(email)
     validate_password(password)
     return True
 
 def validate_user_data_for_registration(username, email, password, confirm_password):
+    """Validate all submitted registration fields and password confirmation."""
     username = (username or "").strip()
     email = (email or "").strip()
     validate_username(username)
@@ -55,11 +60,13 @@ def validate_user_data_for_registration(username, email, password, confirm_passw
     return True
 
 def validate_user_data_for_login(email):
+    """Validate the email field submitted to the login workflow."""
     email = (email or "").strip()
     validate_email(email)
     return True
 
 def validate_if_username_or_email_exists(username, email):
+    """Reject usernames or emails that already exist in the user table."""
     username = (username or "").strip()
     email = (email or "").strip()
     if User.query.filter_by(username=username).first():
@@ -72,6 +79,7 @@ def validate_if_username_or_email_exists(username, email):
 
 # Will most likely be changed to use a more robust validation library in the future, and for better error handling and user feedback, but this is a simple validation function for now.
 def validate_item_data(title, description, price, url):
+    """Validate required fields and numeric price for a catalog item."""
     if not title or not description or price in (None, '') or not url:
         raise ValueError("Title, description, price, and picture URL are required.")
     try:
@@ -84,6 +92,7 @@ def validate_item_data(title, description, price, url):
 
 # Validation helper function for notes
 def validate_note_data(title, content):
+    """Check required note fields and their maximum lengths."""
     if not title or title.strip() == "":
         raise ValueError("Title is required.")
     if not content or content.strip() == "":
@@ -97,6 +106,7 @@ def validate_note_data(title, content):
 
 # Validation helper function for topics
 def validate_topic_data(title, description, color):
+    """Check required topic details and supported field lengths."""
     if not title or title.strip() == "":
         raise ValueError("Title is required.")
     if not description or description.strip() == "":
@@ -111,6 +121,7 @@ def validate_topic_data(title, description, color):
     return True
 
 def validate_flashcard_data(question, answer, difficulty=None):
+    """Check flashcard prompt, answer, lengths, and optional difficulty."""
     if not question or question.strip() == "":
         raise ValueError("Question is required.")
     if not answer or answer.strip() == "":
@@ -124,8 +135,10 @@ def validate_flashcard_data(question, answer, difficulty=None):
     return True
 
 def login_required(f):
+    """Build a decorator that restricts a route to signed-in users."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        """Redirect anonymous requests before invoking the protected view."""
         if 'user_id' not in session:
             flash("You must be logged in to access this page.", "danger")
             return redirect(url_for('auth.login'))  # Redirect to login page if user is not logged in
@@ -138,6 +151,7 @@ def login_required(f):
 VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 
 def validate_study_difficulty(difficulty=None, card_count=None):
+    """Validate optional study difficulty and positive card-count filters."""
     if difficulty and difficulty not in VALID_DIFFICULTIES:
         raise ValueError(f"Invalid difficulty level. Valid options are: {', '.join(VALID_DIFFICULTIES)}")
     if card_count is not None:
@@ -146,6 +160,7 @@ def validate_study_difficulty(difficulty=None, card_count=None):
     return True
 
 def validate_quiz_difficulty(difficulty=None, question_count=None):
+    """Validate optional quiz difficulty and positive question-count filters."""
     if difficulty and difficulty not in VALID_DIFFICULTIES:
         raise ValueError(f"Invalid difficulty level. Valid options are: {', '.join(VALID_DIFFICULTIES)}")
     if question_count is not None:
@@ -155,6 +170,7 @@ def validate_quiz_difficulty(difficulty=None, question_count=None):
 
 
 def validate_study_event_data(user_id, flashcard_id, is_correct, source=None):
+    """Validate identifiers and result fields before recording a study event."""
     if not isinstance(user_id, int) or user_id <= 0:
         raise ValueError("user_id must be a positive integer.")
     if not isinstance(flashcard_id, int) or flashcard_id <= 0:

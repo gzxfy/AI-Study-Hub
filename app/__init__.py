@@ -11,6 +11,7 @@ login_manager = LoginManager()
 csrf = CSRFProtect()
 
 def create_app(test_config=None):
+    """Configure Flask, database extensions, routes, and test overrides."""
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object(Config)
 
@@ -46,6 +47,7 @@ def create_app(test_config=None):
 
     @login_manager.user_loader
     def load_user(user_id):
+        """Load a session user from the database for Flask-Login."""
         return models.User.query.get(int(user_id))
 
     return app

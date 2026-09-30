@@ -1,216 +1,37 @@
-from datetime import datetime
-from flask_login import UserMixin
+"""Compatibility exports for callers using the former combined model module."""
+
 from .. import db
+from . import (
+    Conversation,
+    Flashcard,
+    FlashcardProgress,
+    Message,
+    Note,
+    Progress,
+    QuizAttempt,
+    QuizQuestionAttempt,
+    StudyEvent,
+    StudyPlan,
+    StudyPlanDay,
+    StudyPlanProgress,
+    Topic,
+    User,
+)
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    topics = db.relationship('Topic', backref='user', cascade="all, delete-orphan")
-    notes = db.relationship('Note', backref='user', cascade="all, delete-orphan")
-    conversations = db.relationship('Conversation', backref='user', cascade="all, delete-orphan")
-    progress = db.relationship('Progress', backref='user', cascade="all, delete-orphan")
-    flashcards = db.relationship('Flashcard', backref='user', cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f'<User {self.username}>'
-    
-class Topic(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    color = db.Column(db.String(7), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    notes = db.relationship('Note', backref='topic', cascade="all, delete-orphan")
-    progress = db.relationship('Progress', backref='topic', cascade="all, delete-orphan")
-    flashcards = db.relationship('Flashcard', backref='topic', cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f'<Topic {self.title}>'
-    
-class Note(db.Model):
-    __tablename__ = 'notes'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
-    title = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-
-    uploaded_pdf_path = db.Column(db.String(500), nullable=True)  # Path to the uploaded PDF file
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    conversation = db.relationship('Conversation', backref='note', cascade='all, delete-orphan', uselist=False)
-    flashcards = db.relationship('Flashcard', backref='note', cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f'<Note {self.title}>'
-    
-class Conversation(db.Model):
-    __tablename__ = 'conversations'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    messages = db.relationship('Message', backref='conversation', lazy=True, cascade='all, delete-orphan')
-
-    def __repr__(self):
-        return f'<Conversation {self.id} for Note {self.note_id}>'
-    
-class Message(db.Model):
-    __tablename__ = 'messages'
-
-    id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
-    content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-    def __repr__(self):
-        return f'<Message {self.role} in Conversation {self.conversation_id}>'
-    
-class Progress(db.Model):
-    __tablename__ = 'progress'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
-    notes_count = db.Column(db.Integer, default=0)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def __repr__(self):
-        return f'<Progress {self.notes_count} notes for Topic {self.topic_id}>'
-    
-class Flashcard(db.Model):
-    __tablename__ = 'flashcards'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
-    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
-    question = db.Column(db.Text, nullable=False)
-    answer = db.Column(db.Text, nullable=False)
-    difficulty = db.Column(db.String(50), nullable=True)  # e.g., 'easy', 'medium', 'hard'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def __repr__(self):
-        return f'<Flashcard {self.question[:20]}... Difficulty: {self.difficulty}>'
-    
-class FlashcardProgress(db.Model):
-    __tablename__ = 'flashcard_progress'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
-    times_seen = db.Column(db.Integer, default=0)  # e.g., number of times the flashcard has been seen
-    times_correct = db.Column(db.Integer, default=0)  # e.g., number of times the flashcard has been answered correctly
-    streak = db.Column(db.Integer, default=0)  # e.g., number of consecutive correct answers
-    progress = db.Column(db.Integer, default=0)  # e.g., 0 to 100 representing progress percentage
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # e.g., timestamp of the last time the flashcard was seen
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-# this is for tracking study events, like when a user studies a flashcard, whether they got it right or wrong, and when it happened. This can be useful for analytics, spaced repetition algorithms, and understanding user behavior over time.
-class StudyEvent(db.Model):
-    __tablename__ = 'study_events'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
-    studied_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_correct = db.Column(db.Boolean, nullable=False)  # e.g., True if the answer was correct, False otherwise
-    source = db.Column(db.String(50), nullable=True)  # e.g., 'quiz', 'review', etc.
-    def __repr__(self):
-        return f'<StudyEvent User {self.user_id} Flashcard {self.flashcard_id} Correct: {self.is_correct}>'
-    
-    
-class QuizAttempt(db.Model):
-    __tablename__ = 'quiz_attempts'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
-    # This may get changed to be nullable=True if we want to allow quizzes without a specific note, but for now, let's keep it required.
-    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
-
-    score = db.Column(db.Float, default=0)  
-    status = db.Column(db.String(20), default='in_progress')  # 'in_progress', 'completed'
-    question_index = db.Column(db.Integer, default=0)  # To track which question the user is currently on
-    question_order = db.Column(db.JSON, nullable=True)  # To store the order of flashcard IDs for the quiz attempt
-
-    started_at = db.Column(db.DateTime, default=datetime.utcnow)
-    finished_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    question_attempts = db.relationship('QuizQuestionAttempt', backref='quiz_attempt', cascade='all, delete-orphan')
-    def __repr__(self):
-        return f'<QuizAttempt {self.id} for Note {self.note_id} Topic {self.topic_id} Score: {self.score}>'
-    
-class QuizQuestionAttempt(db.Model):
-    __tablename__ = 'quiz_question_attempts'
-
-    id = db.Column(db.Integer, primary_key=True)
-    quiz_attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'), nullable=False)
-    flashcard_id = db.Column(db.Integer, db.ForeignKey('flashcards.id'), nullable=False)
-
-    user_answer = db.Column(db.Text, nullable=False)
-    correct_answer = db.Column(db.Text, nullable=False)
-    is_correct = db.Column(db.Boolean, default=False)
-
-    time_taken = db.Column(db.Float, default=0)  # Time taken to answer the question in seconds
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f'<QuizQuestionAttempt {self.id} for QuizAttempt {self.quiz_attempt_id} Flashcard {self.flashcard_id}>'
-    
-class StudyPlan(db.Model):
-    __tablename__ = 'study_plans'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    title = db.Column(db.String(200), nullable=False)
-    completed = db.Column(db.Boolean, nullable=False, default=False)  # Track if this specific day is finished
-    start_date = db.Column(db.DateTime, nullable=False)
-    end_date = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default='active')  # 'active', 'completed', 'paused'
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-class StudyPlanDay(db.Model):
-    __tablename__ = 'study_plan_days'
-    study_plan_id = db.Column(db.Integer, db.ForeignKey('study_plans.id'), primary_key=True)
-    day_number = db.Column(db.Integer, primary_key=True)  # Day number in the study plan (1, 2, 3, ...)
-    date = db.Column(db.DateTime, nullable=False)  # The actual date for this day in the study plan
-    task_json = db.Column(db.JSON, nullable=True)  # JSON field to store tasks for the day, e.g., {"tasks": [{"type": "note", "id": 1}, {"type": "flashcard", "id": 2}, {"type": "quiz", "id": 3}]}
-    estimated_time_minutes = db.Column(db.Integer, nullable=True)  # Estimated time to complete tasks for the day
-    completed = db.Column(db.Boolean, default=False, nullable=False)  # Whether the tasks for this day have been completed
-
-    def __repr__(self):
-        return f'<StudyPlanDay {self.day_number} for StudyPlan {self.study_plan_id}>'
-    
-class StudyPlanProgress(db.Model):
-    __tablename__ = 'study_plan_progress'
-
-    id = db.Column(db.Integer, primary_key=True)
-    study_plan_id = db.Column(db.Integer, db.ForeignKey('study_plans.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    completed_days = db.Column(db.Integer, default=0)  # Number of days completed in the study plan
-    total_days = db.Column(db.Integer, default=0)  # Total number of days in the study plan
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def __repr__(self):
-        return f'<StudyPlanProgress for StudyPlan {self.study_plan_id} User {self.user_id}>'
+__all__ = [
+    "Conversation",
+    "Flashcard",
+    "FlashcardProgress",
+    "Message",
+    "Note",
+    "Progress",
+    "QuizAttempt",
+    "QuizQuestionAttempt",
+    "StudyEvent",
+    "StudyPlan",
+    "StudyPlanDay",
+    "StudyPlanProgress",
+    "Topic",
+    "User",
+    "db",
+]

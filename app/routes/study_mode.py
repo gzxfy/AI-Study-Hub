@@ -10,6 +10,7 @@ study_mode_bp = Blueprint('study_mode', __name__)
 @csrf.exempt
 @validation_helpers.login_required
 def start_study_mode():
+    """Return eligible study flashcards using requested filters and priority."""
     user_id = session.get('user_id')  
     try:
         note_id = int(request.args.get('note_id'))  
@@ -30,6 +31,7 @@ def start_study_mode():
 @csrf.exempt
 @validation_helpers.login_required
 def review_study_mode():
+    """Record a flashcard review and return the updated mastery statistics."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     payload = request.get_json() or {}  # Get the JSON payload from the request
     flashcard_id = payload.get('flashcard_id')  # Get the flashcard_id from the payload
@@ -47,6 +49,7 @@ def review_study_mode():
 @csrf.exempt
 @validation_helpers.login_required
 def end_study_mode():
+    """Summarize the signed-in user's completed study session."""
     user_id = session.get('user_id')  
     payload = request.get_json() or {} 
     reviewed_results = payload.get('reviewed_results', []) 

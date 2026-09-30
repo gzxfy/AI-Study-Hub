@@ -11,6 +11,7 @@ study_plan_bp = Blueprint('study_plan', __name__)
 @csrf.exempt
 @validation_helpers.login_required
 def generate_study_plan():
+    """Validate plan options and generate a study schedule for the user."""
     user_id = session.get('user_id')  # Get the logged-in user's ID
     payload = request.get_json() or {}  # Get the JSON payload from the request
     days_until_exam = payload.get('days_until_exam', 7)  # Default to 7 days if not provided
@@ -40,6 +41,7 @@ def generate_study_plan():
 @csrf.exempt
 @validation_helpers.login_required
 def get_current_study_plan():
+    """Return the active study plan and its scheduled daily tasks."""
     user_id = session.get("user_id")
     plan = study_plan_service.get_current_study_plan(user_id)
     if not plan:
@@ -68,6 +70,7 @@ def get_current_study_plan():
 @csrf.exempt
 @validation_helpers.login_required
 def complete_study_plan_day():
+    """Mark one scheduled plan day complete and return updated progress."""
     user_id = session.get('user_id')
     payload = request.get_json() or {}
     day_number = payload.get('day_number')
@@ -89,6 +92,7 @@ def complete_study_plan_day():
 @csrf.exempt
 @validation_helpers.login_required
 def delete_study_plan():
+    """Delete the selected or current study plan for the signed-in user."""
     user_id = session.get('user_id')
     study_plan_id = request.args.get('study_plan_id')  # Optional: specify a study plan ID to delete
     try:
@@ -101,6 +105,7 @@ def delete_study_plan():
 @csrf.exempt
 @validation_helpers.login_required
 def get_study_plan_progress():
+    """Return completion counts and status for a user's study plan."""
     user_id = session.get('user_id')
     study_plan_id = request.args.get('study_plan_id')  # Optional: specify a study plan ID to get progress for
     try:

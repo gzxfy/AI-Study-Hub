@@ -6,15 +6,18 @@ from app.services.ai_service import review_quiz_question_with_AI
 from app.utils.validation_helpers import validate_quiz_difficulty
 
 def normalize_answer(answer):
+    """Normalize answer whitespace and case before quiz comparison."""
     return " ".join((answer or "").strip().lower().split())
 
 def compute_score_percentage(correct_count, total_count):
+    """Convert correct quiz answers into a rounded percentage score."""
     if total_count <= 0:
         return 0.0
     return round(correct_count / total_count * 100, 2)
 
 # This function will most likely be moved to a repository folder in the future, but for now, it's here to keep things simple.
 def get_quiz_attempt_for_user(quiz_attempt_id, user_id):
+    """Fetch a quiz attempt only when it belongs to the requesting user."""
     quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
     if not quiz_attempt:
         raise ValueError("Quiz attempt not found.")
@@ -22,6 +25,7 @@ def get_quiz_attempt_for_user(quiz_attempt_id, user_id):
 
 # load questions for quiz, similar to study mode
 def load_questions_for_quiz(user_id, note_id, topic_id=None, question_count=10, difficulty=None):
+    """Select and shuffle eligible flashcards for a quiz attempt."""
     validate_quiz_difficulty(difficulty, question_count)
     
     query = Flashcard.query.filter_by(user_id=user_id, note_id=note_id)
@@ -39,6 +43,7 @@ def load_questions_for_quiz(user_id, note_id, topic_id=None, question_count=10, 
 
 # create a quiz attempt and return the questions for the quiz.
 def start_quiz(user_id, note_id, topic_id=None, question_count=10, difficulty=None):
+    """Create a quiz attempt and return its selected flashcard questions."""
     questions = load_questions_for_quiz(user_id=user_id, 
                                         note_id=note_id, 
                                         topic_id=topic_id,
@@ -54,6 +59,7 @@ def start_quiz(user_id, note_id, topic_id=None, question_count=10, difficulty=No
     return quiz_attempt, questions
 
 def get_current_quiz_question(user_id, quiz_attempt):
+    """Resolve the next unanswered flashcard in a quiz attempt."""
     attempt = get_quiz_attempt_for_user(quiz_attempt.id, quiz_attempt.user_id)
     order = attempt.question_order or []
     if not order:
@@ -68,6 +74,7 @@ def get_current_quiz_question(user_id, quiz_attempt):
     return flashcard
 
 def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time_taken=0):
+    """Grade and record one answer, then update quiz progress and score."""
     quiz_attempt = get_quiz_attempt_for_user(quiz_attempt_id, user_id)
     if quiz_attempt.status == 'completed':
         raise ValueError("Quiz attempt is already completed.")
@@ -127,6 +134,7 @@ def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time
     }
 
 def finish_quiz(user_id, quiz_attempt_id):
+    """Finalize a quiz attempt and return counts, status, and score."""
     quiz_attempt = get_quiz_attempt_for_user(quiz_attempt_id, user_id)
     quiz_attempts = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id).all()
     
@@ -151,6 +159,7 @@ def finish_quiz(user_id, quiz_attempt_id):
 
 # This function allows users to review their quiz questions and allow the AI agent to help them with questions they missed or found difficult. The feedback can be used to provide insights or suggestions for improvement.
 def review_quiz_question(user_id, quiz_attempt_id, flashcard_id, feedback=None, ask_ai=False):
+    """Return one quiz response with optional AI-generated explanation."""
     get_quiz_attempt_for_user(quiz_attempt_id, user_id)  # Ensure the quiz attempt exists and belongs to the user
     
     question_attempt = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, flashcard_id=flashcard_id).first()
@@ -177,6 +186,7 @@ def review_quiz_question(user_id, quiz_attempt_id, flashcard_id, feedback=None, 
     }
 
 def get_quiz_review_summary(user_id, quiz_attempt_id, ask_ai=False, feedback=None):
+    """Summarize answered quiz questions and optionally explain each with AI."""
     quiz_attempt = get_quiz_attempt_for_user(quiz_attempt_id, user_id)
     question_attempts = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id).all()
     

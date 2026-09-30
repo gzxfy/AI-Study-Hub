@@ -10,6 +10,7 @@ except ModuleNotFoundError:
 
 
 def _build_client():
+    """Create the OpenAI client when configuration and dependencies are available."""
     if OpenAI is None:
         return None
 
@@ -21,6 +22,7 @@ def _build_client():
 
 # Helper function to build the system instruction for the AI model based on the mode of interaction (e.g., "quiz", "summary", or default tutoring mode).
 def build_tutor_instruction(mode: str) -> str:
+    """Select system instructions for tutoring, quiz, or summary interactions."""
     base = (
         "You are a study tutor.\n"
         "Use provided note context as the primary source.\n"
@@ -43,6 +45,7 @@ def build_tutor_instruction(mode: str) -> str:
     )
 
 def detect_mode_from_question(question: str) -> str:
+    """Infer the assistant response mode from the learner's question text."""
     q = (question or "").strip().lower()
 
     # Quiz intent
@@ -70,14 +73,7 @@ def detect_mode_from_question(question: str) -> str:
 
 # Helper function to split text into chunks for processing by the AI model.
 def chunk_text(text: str, size: int = 1200, overlap: int = 200) -> list[str]:
-    """
-    Splits the input text into chunks of a specified size with a specified overlap.
-
-    :param text: The input text to be chunked.
-    :param size: The maximum size of each chunk.
-    :param overlap: The number of characters to overlap between chunks.
-    :return: A list of text chunks.
-    """
+    """Split note content into overlapping chunks for AI context selection."""
     chunks = []
     i = 0
     while i < len(text):
@@ -87,14 +83,7 @@ def chunk_text(text: str, size: int = 1200, overlap: int = 200) -> list[str]:
 
 # Helper function to select the most relevant chunks of note content based on the user's question.
 def select_relevant_chunks(question: str, note_content: str, top_k: int = 3) -> list[str]:
-    """
-    Selects the most relevant chunks of note content based on the user's question.
-
-    :param question: The user's current question.
-    :param note_content: The full content of the note.
-    :param top_k: The number of top relevant chunks to return.
-    :return: A list of the most relevant text chunks.
-    """
+    """Rank note chunks by shared terms and return the best AI context."""
     terms = set((question or "").lower().split())
     scored = []
     for chunk in chunk_text(note_content or ""):
@@ -105,6 +94,7 @@ def select_relevant_chunks(question: str, note_content: str, top_k: int = 3) -> 
 
 # Helper function to build the message payload for the AI model, including system instructions, note content, previous conversation messages, and the current user question.
 def build_messages(question, note_content, conversation_messages):
+    """Build the AI chat payload from a question, note context, and history."""
     mode = detect_mode_from_question(question)
 
     instruction_mode = mode if mode in ["quiz", "summary"] else "teach"
@@ -127,6 +117,7 @@ def build_messages(question, note_content, conversation_messages):
 
 
 def ask_ai(question, note_content, conversation_messages):
+    """Request a tutor response using note context and prior conversation."""
     messages = build_messages(question, note_content, conversation_messages)
     client = _build_client()
 
@@ -141,6 +132,7 @@ def ask_ai(question, note_content, conversation_messages):
     return response.choices[0].message.content
 
 def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedback):
+    """Explain a quiz response using attempt data and optional learner feedback."""
     from app.models.models import Flashcard, QuizAttempt, QuizQuestionAttempt
     quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
     if not quiz_attempt:
@@ -273,9 +265,7 @@ def generate_study_plan_with_AI(user_id, learning_context, days_until_exam=7):
     return plan_data
 
 def ask_ai_with_topics(user_id, question, topic_notes, conversation_messages):
-    """
-    Build one text context from all notes in the topic, then reuse the normal AI path.
-    """
+    """Answer using notes from the current note's topic as AI context."""
     topic_context = "\n\n".join(
         f"Note {note.id} - {note.title}\n{note.content}"
         for note in topic_notes

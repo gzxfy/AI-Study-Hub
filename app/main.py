@@ -15,6 +15,7 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def home():
+    """Render the home page with recent notes for the signed-in user."""
     user_id = session.get("user_id")  # Get the user_id from the session
     if user_id is None:
         # Anonymous users should see the landing page without triggering user-scoped note queries.
@@ -33,6 +34,7 @@ def home():
 @csrf.exempt  # Exempt the search route from CSRF protection
 @login_required  # Ensure the user is logged in before accessing the search route
 def search():
+    """Search the signed-in user's notes and topics by query and type."""
     search_query = request.args.get('q', '').strip()
     search_type = request.args.get('type', 'all').strip()
 
