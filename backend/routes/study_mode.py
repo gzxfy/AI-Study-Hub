@@ -1,7 +1,7 @@
 from flask import Blueprint, flash, jsonify, request, session
-import app.utils.validation_helpers as validation_helpers
-from app.services import study_mode_service, progress_service
-from app import csrf
+import backend.utils.validation_helpers as validation_helpers
+from backend.services import study_mode_service, progress_service
+from backend import csrf
 
 
 study_mode_bp = Blueprint('study_mode', __name__) 

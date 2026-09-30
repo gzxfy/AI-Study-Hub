@@ -1,8 +1,8 @@
 from datetime import datetime, date, timedelta
 
-from app import db
-from app.models.models import Flashcard, FlashcardProgress, Note, StudyEvent, User
-from app.services import progress_service, study_event
+from backend import db
+from backend.models.models import Flashcard, FlashcardProgress, Note, StudyEvent, User
+from backend.services import progress_service, study_event
 
 def _seed_user_note_flashcard(username, email):
     user = User(

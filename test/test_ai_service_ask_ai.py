@@ -1,5 +1,5 @@
-from app.models.models import Conversation, Message, Note
-from app.services.ai_service import ask_ai
+from backend.models.models import Conversation, Message, Note
+from backend.services.ai_service import ask_ai
 
 
 def test_ai_service_ask_ai():
@@ -73,7 +73,7 @@ def test_message_being_saved(client):
     assert Message.query.filter_by(conversation_id=conversation.id, content='Hello AI!').count() == 1  # Ensure the message was saved
 
 def test_mode_detection():
-    from app.services.ai_service import detect_mode_from_question
+    from backend.services.ai_service import detect_mode_from_question
 
     assert detect_mode_from_question("Quiz the concept of gravity.") == "quiz"
     assert detect_mode_from_question("What is the capital of France?") == "question"
@@ -81,7 +81,7 @@ def test_mode_detection():
     assert detect_mode_from_question("This is a random statement.") == "general"
 
 def test_build_messages_maps_non_special_modes_to_teach():
-    from app.services.ai_service import build_messages
+    from backend.services.ai_service import build_messages
 
     messages = build_messages("This is a general question.", "Note content here.", conversation_messages=[])
 
@@ -90,7 +90,7 @@ def test_build_messages_maps_non_special_modes_to_teach():
     assert "check-for-understanding question" in messages[0]["content"].lower()
 
 def test_message_structure_in_build_messages():
-    from app.services.ai_service import build_messages
+    from backend.services.ai_service import build_messages
 
     question = "What is AI?"
     note_content = "AI stands for Artificial Intelligence."
@@ -105,7 +105,7 @@ def test_message_structure_in_build_messages():
     assert messages[-1]['role'] == 'user' and messages[-1]['content'] == question
 
 def test_no_duplicate_messages_in_build_messages():
-    from app.services.ai_service import build_messages
+    from backend.services.ai_service import build_messages
 
     question = "What is AI?"
     note_content = "AI stands for Artificial Intelligence."

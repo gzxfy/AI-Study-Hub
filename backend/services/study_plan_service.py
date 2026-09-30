@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-from app.models.models import (
+from backend.models.models import (
     Note, Flashcard, QuizAttempt,
     StudyPlan, StudyPlanDay, StudyPlanProgress, db
 )
-from app.services.ai_service import generate_study_plan_with_AI
+from backend.services.ai_service import generate_study_plan_with_AI
 
 
 

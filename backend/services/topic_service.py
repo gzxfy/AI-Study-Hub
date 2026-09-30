@@ -1,6 +1,6 @@
-from app import db
-from app.models.models import Topic, db
-import app.utils.validation_helpers as validation_helpers
+from backend import db
+from backend.models.models import Topic, db
+import backend.utils.validation_helpers as validation_helpers
 
 
 def create_topic(user_id, title, description, color):

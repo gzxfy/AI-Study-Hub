@@ -4,9 +4,9 @@ from pyexpat.errors import messages
 
 from flask import flash, redirect, render_template, Blueprint, request, session, url_for
 
-from app.services.ai_service import ask_ai
-import app.utils.validation_helpers as validation_helpers
-from app.utils.validation_helpers import login_required
+from backend.services.ai_service import ask_ai
+import backend.utils.validation_helpers as validation_helpers
+from backend.utils.validation_helpers import login_required
 from .models.models import Conversation, Note, Topic, db, Message
 from . import csrf
 

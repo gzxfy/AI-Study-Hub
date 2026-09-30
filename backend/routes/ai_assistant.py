@@ -1,8 +1,8 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
-from app.models.models import Conversation, Note, Message, db
-from app.utils.validation_helpers import login_required
-from app import csrf
-from app.services.ai_service import ask_ai, ask_ai_with_topics
+from backend.models.models import Conversation, Note, Message, db
+from backend.utils.validation_helpers import login_required
+from backend import csrf
+from backend.services.ai_service import ask_ai, ask_ai_with_topics
 
 
 ai_assistant_bp = Blueprint('ai_assistant', __name__)

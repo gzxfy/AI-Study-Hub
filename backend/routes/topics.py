@@ -1,10 +1,10 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
 
-from app import db
-from app.models.models import User, Conversation, Note, Topic, db, Message
-from app.utils.validation_helpers import login_required
-from app import csrf
-import app.services.topic_service as topic_service
+from backend import db
+from backend.models.models import User, Conversation, Note, Topic, db, Message
+from backend.utils.validation_helpers import login_required
+from backend import csrf
+import backend.services.topic_service as topic_service
 topic_bp = Blueprint('topic', __name__)
 
 @topic_bp.route('/topic/create', methods=['GET', 'POST'])

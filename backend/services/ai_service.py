@@ -1,6 +1,6 @@
 import os
 import json
-from app.models.models import StudyPlan
+from backend.models.models import StudyPlan
 
 
 try:
@@ -133,7 +133,7 @@ def ask_ai(question, note_content, conversation_messages):
 
 def review_quiz_question_with_AI(user_id, quiz_attempt_id, flashcard_id, feedback):
     """Explain a quiz response using attempt data and optional learner feedback."""
-    from app.models.models import Flashcard, QuizAttempt, QuizQuestionAttempt
+    from backend.models.models import Flashcard, QuizAttempt, QuizQuestionAttempt
     quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
     if not quiz_attempt:
         raise ValueError("Quiz attempt not found")

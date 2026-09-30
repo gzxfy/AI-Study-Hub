@@ -1,4 +1,4 @@
-from app.models.models import Flashcard
+from backend.models.models import Flashcard
 from conftest import client
 
 def register_and_login(client, email='test@example.com', password='Password123!'):

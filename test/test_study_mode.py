@@ -1,5 +1,5 @@
-from app import db
-from app.models.models import User, Note, Flashcard
+from backend import db
+from backend.models.models import User, Note, Flashcard
 def test_start_study_mode_returns_cards(client, test_app):
     user = User(username='testuser', email='test@example.com', password_hash='hashed-password')
     db.session.add(user)

@@ -1,7 +1,7 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
-from app.utils.validation_helpers import login_required
-from app import csrf
-import app.services.progress_service as progress_service
+from backend.utils.validation_helpers import login_required
+from backend import csrf
+import backend.services.progress_service as progress_service
 
 progress_bp = Blueprint('progress', __name__)
 

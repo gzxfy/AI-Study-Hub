@@ -1,9 +1,9 @@
 import random
-from app.models.models import FlashcardProgress, Flashcard, QuizAttempt, QuizQuestionAttempt
-from app import db
+from backend.models.models import FlashcardProgress, Flashcard, QuizAttempt, QuizQuestionAttempt
+from backend import db
 from datetime import datetime
-from app.services.ai_service import review_quiz_question_with_AI
-from app.utils.validation_helpers import validate_quiz_difficulty
+from backend.services.ai_service import review_quiz_question_with_AI
+from backend.utils.validation_helpers import validate_quiz_difficulty
 
 def normalize_answer(answer):
     """Normalize answer whitespace and case before quiz comparison."""
@@ -88,7 +88,7 @@ def submit_quiz_answer(user_id, quiz_attempt_id, flashcard_id, user_answer, time
     question_attempt = QuizQuestionAttempt.query.filter_by(quiz_attempt_id=quiz_attempt_id, flashcard_id=flashcard_id).first()
 
     # Log the study event for the flashcard answer submission
-    from app.services.study_event import log_study_event
+    from backend.services.study_event import log_study_event
     log_study_event(user_id=user_id, flashcard_id=flashcard_id, is_correct=is_correct, source='quiz', studied_at=datetime.utcnow())
     db.session.commit()  # Commit the study event to ensure it's saved before proceeding
 

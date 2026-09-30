@@ -1,13 +1,13 @@
 from email.message import Message
 from io import BytesIO
 from urllib import response
-from app.models.models import Conversation, Note, Topic, Message
-from app.services import pdf_service
-from app.services.ai_service import ask_ai
-from app.utils import validation_helpers
+from backend.models.models import Conversation, Note, Topic, Message
+from backend.services import pdf_service
+from backend.services.ai_service import ask_ai
+from backend.utils import validation_helpers
 from conftest import client
-import app.services.note_service as note_service
-from app import db
+import backend.services.note_service as note_service
+from backend import db
 
 # helper function to create a note for testing purposes
 def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
@@ -315,7 +315,7 @@ def test_pdf_upload_request_shape(client, monkeypatch):
         session["username"] = "testuser"
 
     monkeypatch.setattr(
-        "app.services.note_service.pdf_service.extract_text_from_pdf",
+        "backend.services.note_service.pdf_service.extract_text_from_pdf",
         lambda uploaded_file: ("Extracted PDF text", 1),
     )
 
@@ -343,7 +343,7 @@ def test_empty_pdf_file_handling(client, monkeypatch):
         session["username"] = "testuser"
 
     monkeypatch.setattr(
-        "app.services.note_service.pdf_service.extract_text_from_pdf",
+        "backend.services.note_service.pdf_service.extract_text_from_pdf",
         lambda uploaded_file: ("", 0),
     )
 

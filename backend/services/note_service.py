@@ -1,7 +1,7 @@
-from app import db
-from app.models.models import Note, db
-import app.utils.validation_helpers as validation_helpers
-import app.services.pdf_service as pdf_service
+from backend import db
+from backend.models.models import Note, db
+import backend.utils.validation_helpers as validation_helpers
+import backend.services.pdf_service as pdf_service
 
 def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
     """Extract optional PDF text, validate it, and save a study note."""

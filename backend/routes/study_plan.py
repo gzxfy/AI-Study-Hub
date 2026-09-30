@@ -1,8 +1,8 @@
 from flask import Blueprint, flash, jsonify, request, session
-from app.models.models import StudyPlanDay
-import app.utils.validation_helpers as validation_helpers
-from app.services import study_plan_service, progress_service
-from app import csrf
+from backend.models.models import StudyPlanDay
+import backend.utils.validation_helpers as validation_helpers
+from backend.services import study_plan_service, progress_service
+from backend import csrf
 from datetime import datetime, timedelta
 
 study_plan_bp = Blueprint('study_plan', __name__)

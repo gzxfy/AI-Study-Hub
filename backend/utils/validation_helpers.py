@@ -2,7 +2,7 @@ from functools import wraps
 import re
 
 from flask import flash, session, redirect, url_for
-from app.models.models import User
+from backend.models.models import User
 
 # Validation helper functions for email and password
 def validate_email(email):

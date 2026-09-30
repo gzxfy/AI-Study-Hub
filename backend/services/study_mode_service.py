@@ -1,10 +1,10 @@
 import random
-from app.models.models import FlashcardProgress, Flashcard
-from app import db
+from backend.models.models import FlashcardProgress, Flashcard
+from backend import db
 from datetime import datetime
 
-from app.utils.validation_helpers import validate_study_difficulty
-from app.services.study_event import log_study_event
+from backend.utils.validation_helpers import validate_study_difficulty
+from backend.services.study_event import log_study_event
 
 def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None):
     """Select and shuffle a user's note flashcards using optional study filters."""

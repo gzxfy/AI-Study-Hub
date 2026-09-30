@@ -1,6 +1,6 @@
-from app import db
-from app.models.models import StudyPlan, StudyPlanDay, StudyPlanProgress, User
-from app.services import study_plan_service
+from backend import db
+from backend.models.models import StudyPlan, StudyPlanDay, StudyPlanProgress, User
+from backend.services import study_plan_service
 
 # test were created with the help of AI
 def _seed_user(test_app, username="planner", email="planner@example.com"):

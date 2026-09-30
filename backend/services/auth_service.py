@@ -1,7 +1,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
-from app.models.models import User
-import app.utils.validation_helpers as validation_helpers
+from backend import db
+from backend.models.models import User
+import backend.utils.validation_helpers as validation_helpers
 
 def register_user(username, email, password, confirm_password):
     """Validate registration details, hash the password, and create a user."""

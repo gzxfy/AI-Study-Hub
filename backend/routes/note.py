@@ -1,8 +1,8 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
-from app.models.models import Note, Topic
-from app.utils.validation_helpers import login_required
-import app.services.note_service as note_service
-from app import csrf
+from backend.models.models import Note, Topic
+from backend.utils.validation_helpers import login_required
+import backend.services.note_service as note_service
+from backend import csrf
 
 note_bp = Blueprint('note', __name__)
 

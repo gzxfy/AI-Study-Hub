@@ -1,5 +1,5 @@
-import app.utils.validation_helpers as validation_helpers
-from app.models.models import StudyEvent, db
+import backend.utils.validation_helpers as validation_helpers
+from backend.models.models import StudyEvent, db
 from datetime import date, datetime, timedelta
 
 def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=None):

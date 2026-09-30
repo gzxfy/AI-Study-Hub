@@ -1,8 +1,8 @@
 from flask import app
 import pytest
 
-from app.models.models import User
-import app.services.auth_service as auth_service
+from backend.models.models import User
+import backend.services.auth_service as auth_service
 # =====REGISTER TESTS=====
 def test_register_form_includes_csrf_token(client):
     response = client.get('/register')

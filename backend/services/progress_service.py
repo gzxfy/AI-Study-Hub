@@ -1,5 +1,5 @@
-from app.models.models import FlashcardProgress
-import app.services.study_event as study_event_service
+from backend.models.models import FlashcardProgress
+import backend.services.study_event as study_event_service
 
 def get_flashcard_progress(user_id, flashcard_id):
     """Find one user's review statistics for a specific flashcard."""

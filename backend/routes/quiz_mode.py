@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, session
-import app.utils.validation_helpers as validation_helpers
-from app.services import quiz_service
-from app import csrf
+import backend.utils.validation_helpers as validation_helpers
+from backend.services import quiz_service
+from backend import csrf
 
 quiz_mode_bp = Blueprint('quiz_mode', __name__)
 

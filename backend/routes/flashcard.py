@@ -1,7 +1,7 @@
 from flask import flash, redirect, url_for, render_template, request, session, Blueprint
-from app.utils.validation_helpers import login_required
-import app.services.flashcard_service as flashcard_service
-from app import csrf
+from backend.utils.validation_helpers import login_required
+import backend.services.flashcard_service as flashcard_service
+from backend import csrf
 
 flashcard_bp = Blueprint('flashcard', __name__)
 

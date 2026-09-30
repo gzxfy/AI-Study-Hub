@@ -1,5 +1,5 @@
-from app.models.models import Flashcard, db
-import app.utils.validation_helpers as validation_helpers
+from backend.models.models import Flashcard, db
+import backend.utils.validation_helpers as validation_helpers
 
 def create_flashcard(user_id, topic_id, note_id, question, answer, difficulty=None):
     """Validate and persist a flashcard associated with a user's note."""
