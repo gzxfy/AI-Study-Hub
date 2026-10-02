@@ -4,6 +4,10 @@ import re
 from flask import flash, session, redirect, url_for
 from backend.models.models import User
 
+
+class DuplicateAccountError(ValueError):
+    """Raised when a registration username or email is already in use."""
+
 # Validation helper functions for email and password
 def validate_email(email):
     """Check email presence and format for account registration and login."""
@@ -53,10 +57,11 @@ def validate_user_data_for_registration(username, email, password, confirm_passw
     username = (username or "").strip()
     email = (email or "").strip()
     validate_username(username)
-    validate_email(email)
-    validate_password(password)
+    validate_email_and_password(email, password)
+
     if password != confirm_password:
         raise ValueError("Passwords do not match.")
+
     return True
 
 def validate_user_data_for_login(email):
@@ -70,10 +75,10 @@ def validate_if_username_or_email_exists(username, email):
     username = (username or "").strip()
     email = (email or "").strip()
     if User.query.filter_by(username=username).first():
-        raise ValueError("Username is already taken.")
+        raise DuplicateAccountError("Username is already taken.")
     
     if User.query.filter_by(email=email).first():
-        raise ValueError("Email already registered.")
+        raise DuplicateAccountError("Email already registered.")
     
     return True
 

@@ -1,0 +1,11 @@
+// Demonstration content only. Replace at the page boundary when the API is connected.
+export const sampleTopics = ['Computer science', 'Databases', 'Web development'];
+
+export const sampleNotes = [
+  { id: 'complexity', title: 'Time & space complexity', topic: 'Computer science', color: 'green', updated: 'Oct 02', body: 'Time complexity describes how the number of operations grows with input size. A single pass through an array is O(n); binary search on a sorted array is O(log n). Space complexity describes the additional memory an algorithm needs.' },
+  { id: 'normalization', title: 'Database normalization', topic: 'Databases', color: 'purple', updated: 'Oct 01', body: 'Normalization organizes relational data to reduce duplication and avoid update anomalies. First normal form uses atomic values. Second normal form removes partial dependencies on a composite key. Third normal form removes transitive dependencies on the key.' },
+  { id: 'http', title: 'Understanding HTTP requests', topic: 'Web development', color: 'blue', updated: 'Sep 30', body: 'An HTTP request includes a method, a target, headers, and sometimes a body. GET retrieves a representation. POST submits data for processing. The response contains a status code, headers, and an optional body.' },
+  { id: 'structures', title: 'Arrays, stacks & queues', topic: 'Computer science', color: 'green', updated: 'Sep 29', body: 'An array provides indexed access to elements. A stack follows last in, first out: push adds an element and pop removes the most recent one. A queue follows first in, first out, which is useful for processing work in arrival order.' },
+  { id: 'joins', title: 'SQL joins explained', topic: 'Databases', color: 'purple', updated: 'Sep 28', body: 'An inner join returns rows with matching values in both tables. A left join returns every row from the left table, with matching values from the right table where available and NULL values where no match exists.' },
+  { id: 'react', title: 'React component fundamentals', topic: 'Web development', color: 'blue', updated: 'Sep 27', body: 'Components describe part of a user interface. Props pass information from parent to child. State stores information that changes through interaction. Keep state close to the components that use it, and lift it only when it must be shared.' },
+];

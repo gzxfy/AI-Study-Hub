@@ -1,8 +1,8 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFError, CSRFProtect
 from .config import Config
 
 db = SQLAlchemy()
@@ -22,6 +22,17 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        if request.path.startswith('/api/'):
+            return jsonify({
+                "error": {
+                    "code": "csrf_failed",
+                    "message": "CSRF token missing or invalid."
+                }
+            }), 400
+        return error.description, 400
 
     from .models import models
     from .routes.auth import auth_bp

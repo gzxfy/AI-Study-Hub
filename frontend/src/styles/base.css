@@ -1,28 +1,51 @@
 :root {
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #252b35;
-  background: #fff;
+  color: #242b29;
+  background: #f7f8fa;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --muted: #616b79;
-  --border: #e5e8ed;
-  --accent: #3457a0;
+  /* Shared design tokens: edit these to change the visual theme. */
+  --muted: #707773;
+  --border: #e7ebe8;
+  --accent: #087f65;
+  --accent-hover: #066b55;
+  --accent-soft: #eaf5ef;
+  --surface: #fff;
+  --canvas: #f7f8fa;
+  --radius: 9px;
 }
 * { box-sizing: border-box; }
-body { margin: 0; }
-button, input { font: inherit; }
-button, a { -webkit-tap-highlight-color: transparent; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; }
-svg { flex-shrink: 0; }
+svg { flex-shrink: 0; vertical-align: middle; }
 h1, h2, h3, p { margin: 0; }
-h1 { font-size: clamp(1.8rem, 3vw, 2.25rem); line-height: 1.2; font-weight: 650; letter-spacing: -.045em; }
-h2 { font-size: 1rem; font-weight: 650; }
-h3 { font-size: .95rem; font-weight: 600; }
-p { line-height: 1.65; }
-:focus-visible { outline: 3px solid #5a7cc3; outline-offset: 4px; }
-.text-link { display: inline-flex; align-items: center; gap: 10px; color: var(--accent); font-size: .9rem; font-weight: 600; }
-.text-link:hover { text-decoration: underline; }
-.skip-link { position: fixed; left: 16px; top: -100px; padding: 12px 20px; z-index: 10; background: #fff; border: 2px solid var(--accent); }
+h1 { font-size: 28px; line-height: 1.25; font-weight: 650; letter-spacing: -.9px; }
+h2 { font-size: 14px; font-weight: 600; line-height: 1.5; }
+p { line-height: 1.6; }
+button, a, input, select { touch-action: manipulation; }
+:focus-visible { outline: 3px solid #279d81; outline-offset: 3px; }
+input, select { color: inherit; background: white; border: 1px solid #dce2de; border-radius: 6px; }
+input::placeholder { color: #89908c; }
+.button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-height: 40px; padding: 10px 15px; border: 1px solid transparent; border-radius: 6px; font-size: 12px; font-weight: 550; line-height: 1.4; }
+.button-primary { background: var(--accent); color: white; }
+.button-primary:hover { background: var(--accent-hover); }
+.button-secondary { background: white; border-color: #dce3de; color: #333e37; }
+.button-secondary:hover { background: #f4f7f5; border-color: #b9c8bf; }
+.button-small { min-height: 34px; padding: 8px 12px; }
+.text-link, .text-button { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 11px; font-weight: 550; }
+.text-link:hover, .text-button:hover { text-decoration: underline; }
+.text-button { border: 0; padding: 6px 0; background: transparent; }
+.icon-button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; border-radius: 5px; color: var(--muted); }
+.icon-button:hover { color: var(--accent); background: var(--accent-soft); }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.status-dot { display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+.sample-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; line-height: 1.4; font-weight: 550; color: #496253; background: #edf3ee; border: 1px solid #dfe9e1; border-radius: 4px; padding: 4px 7px; white-space: nowrap; }
+.skip-link { position: fixed; left: 16px; top: -100px; padding: 12px 20px; z-index: 10; background: white; border: 2px solid var(--accent); }
 .skip-link:focus { top: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.rotate { display: inline-flex; transform: rotate(180deg); }

@@ -7,7 +7,6 @@ export default function PageHeader({ title, description }) {
 
   return (
     <header className="page-header">
-      <p className="eyebrow">AI Study Hub</p>
       <h1>{title}</h1>
       <p>{description}</p>
     </header>
