@@ -1,10 +1,38 @@
 from backend import db
-from backend.models.models import Note, db
+from backend.models.models import Note, Topic
 import backend.utils.validation_helpers as validation_helpers
 import backend.services.pdf_service as pdf_service
 
+
+class InvalidTopicError(ValueError):
+    """Raised when a note references a topic the user cannot access."""
+
+
+def list_notes(user_id):
+    """Return a user's notes, newest updates first."""
+    return (
+        Note.query
+        .filter_by(user_id=user_id)
+        .order_by(Note.updated_at.desc(), Note.id.desc())
+        .all()
+    )
+
+
+def list_topics(user_id):
+    """Return the topics owned by a user for note assignment."""
+    return Topic.query.filter_by(user_id=user_id).order_by(Topic.title.asc()).all()
+
+
+def topic_belongs_to_user(topic_id, user_id):
+    """Check that a topic exists and belongs to the requesting user."""
+    return Topic.query.filter_by(id=topic_id, user_id=user_id).first() is not None
+
+
 def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
     """Extract optional PDF text, validate it, and save a study note."""
+    if topic_id is not None and not topic_belongs_to_user(topic_id, user_id):
+        raise InvalidTopicError("Topic is invalid or unavailable.")
+
     extracted_text = ""
     uploaded_pdf_name = None
 
@@ -30,7 +58,7 @@ def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
 
 def view_note(note_id, user_id):
     """Return a note only after confirming it exists and belongs to the user."""
-    note = Note.query.get(note_id)
+    note = db.session.get(Note, note_id)
     if not note:
         raise ValueError("Note not found!")
     if note.user_id != user_id:

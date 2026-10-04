@@ -102,7 +102,7 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173/app>. Node.js 22.12 or newer is required by the current Vite version. The preview can run without Flask, but its feature pages are not connected to backend data. The Vite development server has a proxy reserved for future `/api` requests; the current Flask app does not provide that API yet.
+Open <http://127.0.0.1:5173/app>. Node.js 22.12 or newer is required by the current Vite version. The preview can run without Flask, but its feature pages are not connected to backend data. The Vite development server proxies `/api` requests to Flask. Authentication and the notes contract (`GET /api/notes`, `GET /api/topics`, `POST /api/notes`, and `GET /api/notes/<id>`) are implemented; other feature pages remain placeholders. See `frontend/FRONTEND.md` for the notes API contract.
 
 To build or locally serve the compiled preview:
 

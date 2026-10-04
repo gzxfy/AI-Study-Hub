@@ -26,18 +26,20 @@ def create_app(test_config=None):
     @app.errorhandler(CSRFError)
     def handle_csrf_error(error):
         if request.path.startswith('/api/'):
-            return jsonify({
+            response = jsonify({
                 "error": {
                     "code": "csrf_failed",
                     "message": "CSRF token missing or invalid."
                 }
-            }), 400
+            })
+            response.headers["Cache-Control"] = "no-store"
+            return response, 400
         return error.description, 400
 
     from .models import models
     from .routes.auth import auth_bp
     from .main import main_bp
-    from .routes.note import note_bp
+    from .routes.note_route import note_bp
     from .routes.topics import topic_bp
     from .routes.ai_assistant import ai_assistant_bp
     from .routes.flashcard import flashcard_bp
