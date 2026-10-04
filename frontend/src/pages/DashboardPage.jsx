@@ -5,8 +5,10 @@ import PageHeader from '../components/PageHeader';
 import StudyCalendar from '../components/StudyCalendar';
 import StudyChecklist from '../components/StudyChecklist';
 import { sampleNotes, sampleTopics } from '../sampleWorkspace';
+import { useAuth } from '../auth/AuthContext';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [topic, setTopic] = useState('All topics');
   const [selectedNote, setSelectedNote] = useState(null);
   const noteDialog = useRef(null);
@@ -21,7 +23,7 @@ export default function DashboardPage() {
     <>
       <div className="page-heading-row">
         <PageHeader title="Overview" description="Keep your notes, topics, and revision in one place." />
-        <Link className="button button-primary" to="/register"><Icon name="plus" size={17} /> Create your workspace</Link>
+        <Link className="button button-primary" to={user ? '/app/notes/new' : '/register'}><Icon name="plus" size={17} /> {user ? 'Create a note' : 'Create your workspace'}</Link>
       </div>
       <div className="preview-banner"><span className="sample-badge"><span className="status-dot" /> Sample workspace</span><p>A look at how your study materials come together. The content below is an example.</p></div>
       <div className="dashboard-grid">

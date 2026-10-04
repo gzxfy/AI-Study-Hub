@@ -1,0 +1,90 @@
+/* Forms shared by authentication and note creation. */
+.form-fields { display: grid; gap: 19px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field-error { font-size: 12px; color: #a13832; }
+[aria-invalid="true"] { border-color: #bc5a50; }
+.form-message-error, .request-error { color: #873f37; background: #fff6f3; border: 1px solid #efdad4; }
+.request-error { margin: 24px; padding: 20px; border-radius: 7px; font-size: 13px; }
+.request-error .text-button, .request-error .text-link { margin-top: 9px; }
+.button-danger { background: #a74036; color: white; }
+.button-danger:hover { background: #8e352c; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+.page-status { padding: 40px 24px; color: var(--muted); font-size: 13px; }
+.account-status { color: var(--muted); font-size: 11px; }
+.account-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.account-summary { margin-top: auto; }
+.account-summary > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+
+/* Notes library. */
+.notes-workspace { max-width: 1130px; margin: 0 auto; }
+.notes-library { margin-top: 28px; overflow: hidden; }
+.notes-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--border); }
+.notes-toolbar h2 { display: flex; align-items: center; gap: 9px; }
+.note-count { padding: 2px 7px; color: var(--muted); background: #f2f5f1; border-radius: 4px; font-size: 11px; }
+.notes-search input { width: 260px; max-width: 100%; padding: 10px 12px; font-size: 12px; }
+.notes-empty { display: flex; flex-direction: column; align-items: center; padding: 70px 24px; text-align: center; }
+.notes-empty h2 { font-size: 17px; }
+.notes-empty p { color: var(--muted); font-size: 13px; margin: 8px 0 23px; }
+.library-table td { padding-block: 18px; }
+.library-table th { padding-block: 13px; }
+.library-note-link { display: flex; gap: 13px; align-items: center; font-size: 13px; }
+.library-note-link:hover { color: var(--accent); }
+.library-note-link > span:last-child { display: block; max-width: 420px; white-space: normal; overflow-wrap: anywhere; }
+.library-note-link small { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); margin-top: 5px; font-size: 11px; }
+
+/* Plain-text editor. Keep writing controls separate from note metadata. */
+.back-link { margin-bottom: 22px; }
+.draft-status { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.draft-status .status-dot { background: #a3ada5; }
+.note-composer { margin-top: 27px; }
+.composer-fields { display: grid; grid-template-columns: minmax(0, 1fr) 264px; gap: 22px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.editor-panel { padding: 28px 30px 0; min-width: 0; }
+.editor-panel label { font-size: 12px; }
+.editor-panel #title { height: 49px; font-size: 20px; font-weight: 500; border: 0; border-radius: 0; padding: 8px 0; background: transparent; }
+.editor-panel #title::placeholder { font-weight: 400; color: #949d96; }
+.editor-panel #title[aria-invalid="true"] { border-bottom: 1px solid #bc5a50; }
+.editor-divider { border-bottom: 1px solid var(--border); margin: 20px 0 24px; }
+.content-field { gap: 15px; }
+.content-field textarea { min-height: 330px; resize: vertical; border: 0; border-radius: 0; padding: 3px 0; font-size: 14px; line-height: 1.85; background: transparent; }
+.content-field textarea::placeholder { color: #949d96; }
+.editor-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 0; border-top: 1px solid var(--border); margin-top: 20px; color: var(--muted); font-size: 10px; }
+.note-details { padding: 22px; }
+.note-details > h2 { margin-bottom: 24px; }
+.note-details > label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 9px; }
+.note-details > label span { color: var(--muted); font-size: 10px; }
+.note-details select { width: 100%; padding: 11px; font-size: 12px; }
+.note-details .field-hint { margin-top: 10px; }
+.topic-load-error { margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; color: #826534; }
+.note-save-info { display: flex; align-items: flex-start; gap: 9px; border-top: 1px solid var(--border); margin-top: 25px; padding-top: 20px; color: var(--muted); }
+.note-save-info svg { margin-top: 2px; }
+.note-save-info p { font-size: 11px; }
+.note-save-info strong { font-weight: 500; color: #515f55; }
+.note-writing-tip { display: flex; align-items: flex-start; gap: 11px; padding: 22px 5px; color: #78847a; }
+.note-writing-tip p { font-size: 11px; }
+.composer-actions { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 0; }
+.composer-actions > p { color: var(--muted); font-size: 11px; }
+.composer-actions > div { display: flex; gap: 10px; }
+.note-metadata { display: flex; align-items: center; gap: 14px; margin: 18px 0 24px; font-size: 11px; color: var(--muted); }
+.note-saved-message { display: flex; gap: 8px; align-items: center; color: var(--accent); font-size: 12px; margin-bottom: 20px; }
+.saved-note { padding: 32px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.9; min-height: 300px; }
+.notes-workspace .page-header h1 { overflow-wrap: anywhere; }
+
+@media (max-width: 1050px) {
+  .composer-fields { grid-template-columns: minmax(0, 1fr) 225px; gap: 16px; }
+  .editor-panel { padding: 22px 22px 0; }
+}
+@media (max-width: 850px) {
+  .composer-fields { grid-template-columns: minmax(0, 1fr); }
+  .note-writing-tip { display: none; }
+  .note-details > h2 { margin-bottom: 18px; }
+}
+@media (max-width: 600px) {
+  .notes-toolbar { align-items: stretch; flex-direction: column; gap: 16px; padding: 20px; }
+  .notes-search input { width: 100%; }
+  .library-note-link > span:last-child { min-width: 180px; max-width: 250px; }
+  .composer-actions { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .composer-actions > div { width: 100%; justify-content: flex-end; }
+  .editor-panel { padding: 20px 18px 0; }
+  .editor-panel #title { font-size: 18px; }
+  .saved-note { padding: 24px; }
+  .account-name { max-width: 130px; }
+}

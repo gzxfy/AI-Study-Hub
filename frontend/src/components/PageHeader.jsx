@@ -8,7 +8,7 @@ export default function PageHeader({ title, description }) {
   return (
     <header className="page-header">
       <h1>{title}</h1>
-      <p>{description}</p>
+      {description && <p>{description}</p>}
     </header>
   );
 }

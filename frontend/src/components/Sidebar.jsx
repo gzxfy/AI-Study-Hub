@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from 'react-router';
 import Icon from './Icon';
+import { useAuth } from '../auth/AuthContext';
 
 const links = [
   { to: '/', label: 'Overview', icon: 'dashboard' },
@@ -16,6 +17,7 @@ export function Brand() {
 
 export default function Sidebar({ navigationOpen, onNavigate }) {
   const { pathname } = useLocation();
+  const { user, status } = useAuth();
   return (
     <aside className="sidebar">
       <Brand />
@@ -29,13 +31,17 @@ export default function Sidebar({ navigationOpen, onNavigate }) {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-footer">
+        {!user && status !== 'loading' && <div className="sidebar-footer">
           <Icon name="book" size={22} />
           <h2>Make it your workspace.</h2>
           <p>Create an account to keep your study materials together.</p>
           <Link className="button button-secondary" to="/register" onClick={onNavigate}>Create account <Icon name="arrow" size={16} /></Link>
-        </div>
-        <Link className="sidebar-login" to="/login" onClick={onNavigate}><span className="guest-avatar"><Icon name="user" size={17} /></span><span>Guest workspace<small>Log in to your account</small></span><Icon name="arrow" size={16} /></Link>
+        </div>}
+        {user ? (
+          <div className="sidebar-login account-summary"><span className="guest-avatar"><Icon name="user" size={17} /></span><span>{user.username}<small>Personal account</small></span></div>
+        ) : status !== 'loading' && (
+          <Link className="sidebar-login" to="/login" onClick={onNavigate}><span className="guest-avatar"><Icon name="user" size={17} /></span><span>Guest workspace<small>Log in to your account</small></span><Icon name="arrow" size={16} /></Link>
+        )}
       </div>
     </aside>
   );

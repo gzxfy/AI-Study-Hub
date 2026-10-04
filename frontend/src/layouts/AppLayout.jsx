@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
+import AccountControls from '../components/AccountControls';
 import Sidebar from '../components/Sidebar';
 import Icon from '../components/Icon';
 
@@ -28,7 +29,7 @@ export default function AppLayout() {
       <div className="workspace">
         <header className="topbar">
           <div className="breadcrumb"><button ref={menuRef} className="icon-button menu-button" aria-label={navigationOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={navigationOpen} aria-controls="workspace-navigation" onClick={() => setNavigationOpen(!navigationOpen)}><Icon name="menu" /></button><Icon name="book" size={16} /><span>Workspace</span><span className="breadcrumb-divider">/</span><strong>Study Hub</strong></div>
-          <div className="topbar-actions"><Link className="login-link" to="/login">Log in</Link><Link className="button button-primary button-small" to="/register">Get started <Icon name="arrow" size={15} /></Link></div>
+          <AccountControls />
         </header>
         <main id="main-content" className="main-content" tabIndex={-1} ref={mainRef}><Outlet /></main>
       </div>
