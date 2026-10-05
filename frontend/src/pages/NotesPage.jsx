@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
-import { listNotes } from '../api/notes';
+import { Link, useLocation } from 'react-router';
+import { deleteNote, listNotes } from '../api/notes';
+import DeleteDialog from '../components/DeleteDialog';
 import Icon from '../components/Icon';
 import PageHeader from '../components/PageHeader';
 import RequestError from '../components/RequestError';
@@ -10,6 +11,9 @@ import { formatNoteDate } from '../notes/formatDate';
 export default function NotesPage() {
   const { data: notes, error, loading, reload } = useResource(listNotes);
   const [query, setQuery] = useState('');
+  const [deleting, setDeleting] = useState(null);
+  const [deleted, setDeleted] = useState(false);
+  const { state } = useLocation();
   const search = query.trim().toLowerCase();
   const visibleNotes = notes?.filter((note) => `${note.title} ${note.topic?.title || ''}`.toLowerCase().includes(search)) || [];
 
@@ -19,6 +23,7 @@ export default function NotesPage() {
         <PageHeader title="Notes" description="Your study material, ready to revisit." />
         <Link className="button button-primary" to="/app/notes/new"><Icon name="plus" size={17} /> Create note</Link>
       </div>
+      {(deleted || state?.deleted) && <p className="note-saved-message" role="status">Note deleted.</p>}
       <section className="panel notes-library" aria-label="Your notes">
         <div className="notes-toolbar">
           <h2>All notes {notes && <span className="note-count">{notes.length}</span>}</h2>
@@ -52,7 +57,7 @@ export default function NotesPage() {
         ) : (
           <div className="table-scroll">
             <table className="library-table">
-              <thead><tr><th scope="col">Note</th><th scope="col">Topic</th><th scope="col">Last updated</th></tr></thead>
+              <thead><tr><th scope="col">Note</th><th scope="col">Topic</th><th scope="col">Last updated</th><th scope="col">Actions</th></tr></thead>
               <tbody>{visibleNotes.map((note) => (
                 <tr key={note.id}>
                   <td>
@@ -63,12 +68,27 @@ export default function NotesPage() {
                   </td>
                   <td><span className="topic-tag topic-green">{note.topic?.title || 'No topic'}</span></td>
                   <td className="note-date">{formatNoteDate(note.updated_at)}</td>
+                  <td>
+                    <div className="record-actions">
+                      <Link className="text-link" to={`/app/notes/${note.id}/edit`} aria-label={`Edit ${note.title}`}>Edit</Link>
+                      <button className="text-button danger-text" onClick={() => setDeleting(note)} aria-label={`Delete ${note.title}`}>Delete</button>
+                    </div>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
         )}
       </section>
+      {deleting && (
+        <DeleteDialog
+          title="Delete this note?"
+          description={`“${deleting.title}” and its related flashcards and conversation will be permanently deleted. This cannot be undone.`}
+          onDelete={() => deleteNote(deleting.id)}
+          onDeleted={() => { setDeleting(null); setDeleted(true); reload(); }}
+          onClose={() => setDeleting(null)}
+        />
+      )}
     </div>
   );
 }

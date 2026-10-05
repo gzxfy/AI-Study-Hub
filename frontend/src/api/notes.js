@@ -26,3 +26,11 @@ export async function getNote(id, signal) {
 export async function createNote({ title, content, topic_id }) {
   return readNote(await mutate('/api/notes', { title, content, topic_id }));
 }
+
+export async function updateNote(id, { title, content, topic_id }) {
+  return readNote(await mutate(`/api/notes/${encodeURIComponent(id)}`, { title, content, topic_id }, { method: 'PATCH' }));
+}
+
+export function deleteNote(id) {
+  return mutate(`/api/notes/${encodeURIComponent(id)}`, undefined, { method: 'DELETE' });
+}

@@ -9,9 +9,12 @@ import NotesPage from './pages/NotesPage';
 import CreateNotePage from './pages/CreateNotePage';
 import NotePage from './pages/NotePage';
 import LogoutPage from './pages/LogoutPage';
+import EditNotePage from './pages/EditNotePage';
+import TopicsPage from './pages/TopicsPage';
+import TopicPage from './pages/TopicPage';
+import TopicEditorPage from './pages/TopicEditorPage';
 
 const features = [
-  { path: 'topics', title: 'Topics', description: 'Group your study materials by subject or course.' },
   { path: 'flashcards', title: 'Flashcards', description: 'Review key concepts from your notes.' },
   { path: 'study', title: 'Study', description: 'Set aside time to practice what you have learned.' },
   { path: 'assistant', title: 'AI Assistant', description: 'Ask questions about your study materials.' },
@@ -27,6 +30,11 @@ const router = createBrowserRouter(createRoutesFromElements(
           <Route path="app/notes" element={<NotesPage />} />
           <Route path="app/notes/new" element={<CreateNotePage />} />
           <Route path="app/notes/:noteId" element={<NotePage />} />
+          <Route path="app/notes/:noteId/edit" element={<EditNotePage />} />
+          <Route path="app/topics" element={<TopicsPage />} />
+          <Route path="app/topics/new" element={<TopicEditorPage />} />
+          <Route path="app/topics/:topicId" element={<TopicPage />} />
+          <Route path="app/topics/:topicId/edit" element={<TopicEditorPage />} />
         </Route>
         {features.map(({ path, ...props }) => (
           <Route key={path} path={`app/${path}`} element={<FeaturePage {...props} />} />
