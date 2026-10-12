@@ -13,11 +13,11 @@ import EditNotePage from './pages/EditNotePage';
 import TopicsPage from './pages/TopicsPage';
 import TopicPage from './pages/TopicPage';
 import TopicEditorPage from './pages/TopicEditorPage';
+import AssistantPage from './pages/AssistantPage';
 
 const features = [
   { path: 'flashcards', title: 'Flashcards', description: 'Review key concepts from your notes.' },
   { path: 'study', title: 'Study', description: 'Set aside time to practice what you have learned.' },
-  { path: 'assistant', title: 'AI Assistant', description: 'Ask questions about your study materials.' },
 ];
 
 const router = createBrowserRouter(createRoutesFromElements(
@@ -27,6 +27,7 @@ const router = createBrowserRouter(createRoutesFromElements(
         <Route path="app" element={<DashboardPage />} />
         <Route path="logout" element={<LogoutPage />} />
         <Route element={<RequireAuth />}>
+          <Route path="app/assistant" element={<AssistantPage />} />
           <Route path="app/notes" element={<NotesPage />} />
           <Route path="app/notes/new" element={<CreateNotePage />} />
           <Route path="app/notes/:noteId" element={<NotePage />} />

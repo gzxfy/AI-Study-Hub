@@ -30,6 +30,7 @@ export default function NotePage() {
           <div className="page-heading-row">
             <PageHeader title={note.title} />
             <div className="record-actions">
+              <Link className="button button-primary" to={`/app/assistant?note=${note.id}`}>Ask AI</Link>
               <Link className="button button-secondary" to={`/app/notes/${note.id}/edit`}>Edit note</Link>
               <button className="button button-danger-outline" onClick={() => setDeleting(true)}>Delete note</button>
             </div>

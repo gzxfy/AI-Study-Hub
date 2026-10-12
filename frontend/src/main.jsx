@@ -6,6 +6,7 @@ import './styles/base.css';
 import './styles/layout.css';
 import './styles/notes.css';
 import './styles/topics.css';
+import './styles/assistant.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
