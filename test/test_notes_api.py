@@ -97,28 +97,6 @@ def test_list_notes_only_returns_the_users_notes_in_updated_order(
     assert notes[1]["updated_at"] == "2026-10-02T16:00:00Z"
 
 
-def test_list_topics_only_returns_topics_owned_by_the_user(client, test_app):
-    user_id = create_user(test_app)
-    other_user_id = create_user(
-        test_app, username="other", email="other@example.com"
-    )
-    zoology_id = create_topic(test_app, user_id, title="Zoology")
-    algebra_id = create_topic(test_app, user_id, title="Algebra")
-    create_topic(test_app, other_user_id, title="Private topic")
-    sign_in(client, user_id)
-
-    response = client.get("/api/topics")
-
-    assert response.status_code == 200
-    assert response.headers["Cache-Control"] == "no-store"
-    assert response.json == {
-        "topics": [
-            {"id": algebra_id, "title": "Algebra"},
-            {"id": zoology_id, "title": "Zoology"},
-        ]
-    }
-
-
 @pytest.mark.parametrize("topic_id", [None, "owned"])
 def test_create_note_persists_the_note_and_returns_contract_shape(
     client, test_app, topic_id

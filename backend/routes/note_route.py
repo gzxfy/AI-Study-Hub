@@ -1,10 +1,9 @@
 from datetime import timezone
 
-from flask import (Blueprint, current_app, flash, jsonify, redirect, render_template, request, session, url_for)
+from flask import Blueprint, current_app, jsonify, request, session
 
-from backend import csrf, db
-from backend.models.models import Note, User
-from backend.utils.validation_helpers import login_required
+from backend import db
+from backend.models.models import User
 import backend.services.note_service as note_service
 
 note_bp = Blueprint('note', __name__)
@@ -119,21 +118,6 @@ def list_notes():
         return internal_error("Unable to load notes.")
 
 
-@note_bp.get("/api/topics")
-def list_note_topics():
-    user_id, error_response = api_user_id()
-    if error_response:
-        return error_response
-
-    try:
-        topics = note_service.list_topics(user_id)
-        return api_json({
-            "topics": [{"id": topic.id, "title": topic.title} for topic in topics]
-        })
-    except Exception:
-        return internal_error("Unable to load topics.")
-
-
 @note_bp.post("/api/notes")
 def api_create_note():
     user_id, error_response = api_user_id()
@@ -146,15 +130,6 @@ def api_create_note():
 
     try:
         topic_id = data["topic_id"]
-        if topic_id is not None and not note_service.topic_belongs_to_user(
-            topic_id, user_id
-        ):
-            return api_error(
-                "invalid_topic",
-                "Topic is invalid or unavailable.",
-                400,
-            )
-
         note = note_service.create_note(
             user_id=user_id,
             title=data["title"],

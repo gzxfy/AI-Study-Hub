@@ -1,5 +1,6 @@
 from backend import db
-from backend.models.models import Note, Topic
+from backend.models.models import Note
+from backend.services import topic_service
 import backend.utils.validation_helpers as validation_helpers
 import backend.services.pdf_service as pdf_service
 
@@ -18,19 +19,11 @@ def list_notes(user_id):
     )
 
 
-def list_topics(user_id):
-    """Return the topics owned by a user for note assignment."""
-    return Topic.query.filter_by(user_id=user_id).order_by(Topic.title.asc()).all()
-
-
-def topic_belongs_to_user(topic_id, user_id):
-    """Check that a topic exists and belongs to the requesting user."""
-    return Topic.query.filter_by(id=topic_id, user_id=user_id).first() is not None
-
-
 def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
     """Extract optional PDF text, validate it, and save a study note."""
-    if topic_id is not None and not topic_belongs_to_user(topic_id, user_id):
+    if topic_id is not None and not topic_service.topic_belongs_to_user(
+        topic_id, user_id
+    ):
         raise InvalidTopicError("Topic is invalid or unavailable.")
 
     extracted_text = ""

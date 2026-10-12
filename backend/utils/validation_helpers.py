@@ -111,18 +111,17 @@ def validate_note_data(title, content):
 
 # Validation helper function for topics
 def validate_topic_data(title, description, color):
-    """Check required topic details and supported field lengths."""
-    if not title or title.strip() == "":
+    """Check required topic details, lengths, and the supported color format."""
+    if not isinstance(title, str) or not title.strip():
         raise ValueError("Title is required.")
-    if not description or description.strip() == "":
+    if not isinstance(description, str) or not description.strip():
         raise ValueError("Description is required.")
-    if not color or color.strip() == "":
-        color = "#000000"  # Default color if none is provided
-    if len(title) > 100:
+    if len(title.strip()) > 100:
         raise ValueError("Title cannot be longer than 100 characters.")
-    if len(description) > 1000:
+    if len(description.strip()) > 1000:
         raise ValueError("Description cannot be longer than 1000 characters.")
-    # Additional validation can be added here, such as checking for prohibited words or formatting requirements
+    if not isinstance(color, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+        raise ValueError("Color must be a six-digit hex color.")
     return True
 
 def validate_flashcard_data(question, answer, difficulty=None):

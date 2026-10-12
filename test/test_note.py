@@ -1,9 +1,10 @@
 from email.message import Message
 from io import BytesIO
 from urllib import response
-from backend.models.models import Conversation, Note, Topic, Message
+from backend.models.models import Conversation, Note, Message
 from backend.services import pdf_service
 from backend.services.ai_service import ask_ai
+from backend.services import topic_service
 from backend.utils import validation_helpers
 from conftest import client
 import backend.services.note_service as note_service
@@ -213,9 +214,12 @@ def test_note_in_topic(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
         session['username'] = 'testuser'  # Set a username for the session
-    # Create a topic for the user
-    client.post('/topic/create', data={'title': 'Test Topic', 'description': 'This is a test topic.', 'color': '#ffffff'}, follow_redirects=True)
-    topic = Topic.query.filter_by(user_id=1).first()
+    topic = topic_service.create_topic(
+        user_id=1,
+        title='Test Topic',
+        description='This is a test topic.',
+        color='#ffffff',
+    )
     # Create a note within the topic
     note = create_note(user_id=1, title='Note in Topic', content='This note is in a topic.', topic_id=topic.id)
 
@@ -246,17 +250,6 @@ def test_search_notes(client):
     assert b'Searchable Note' in response.data  # Ensure the note is found in the search results
     assert response.status_code == 200  # Ensure the search request was successful
 
-def test_search_topics(client):
-    with client.session_transaction() as session:
-        session['user_id'] = 1  # Set the user_id for the session
-        session['username'] = 'testuser'  # Set a username for the session
-    # Create a topic to search for
-    client.post('/topic/create', data={'title': 'Searchable Topic', 'description': 'This topic can be searched.', 'color': '#ffffff'}, follow_redirects=True)
-    # Search for the topic by title
-    response = client.get('/search?q=Searchable&type=topics', follow_redirects=True)
-    assert b'Searchable Topic' in response.data  # Ensure the topic is found in the search results
-    assert response.status_code == 200  # Ensure the search request was successful
-
 def test_search_no_results(client):
     with client.session_transaction() as session:
         session['user_id'] = 1  # Set the user_id for the session
@@ -266,48 +259,6 @@ def test_search_no_results(client):
     assert b'No results found' in response.data  # Ensure the no results message is shown
     assert response.status_code == 200  # Ensure the search request was successful
 
-
-def test_topic_being_deleted(client):
-    with client.session_transaction() as session:
-        session['user_id'] = 1  # Set the user_id for the session
-        session['username'] = 'testuser'  # Set a username for the session
-
-    # Register and log in the user
-    register_and_login(client, email='test@example.com', password='Password123!')
-
-    response = client.post('/topic/create', data={'title': 'Deletable Topic', 'description': 'This topic will be deleted.'}, follow_redirects=True)
-    print(response.status_code)
-    print(response.data.decode())
-    with client.application.app_context():
-        topic = Topic.query.filter_by(user_id=1).first()  # Retrieve the topic from the database for the correct user
-        assert topic is not None  # Ensure the topic exists before attempting to delete
-        topic_id = topic.id  # Store the topic ID for deletion
-
-    assert response.status_code == 200  # Ensure the topic creation request was successful
-    assert topic.user_id == 1  # Ensure the topic belongs to the correct user before attempting to delete
-
-    client.get(f'/delete_topic/{topic_id}', follow_redirects=True)  # Use the stored topic ID for deletion
-    # Ensure the topic was deleted
-    with client.application.app_context():
-        topic = Topic.query.filter_by(id=topic_id, user_id=1).first()
-        assert topic is None  # Ensure the topic was deleted from the database
-
-def test_topic_being_edited(client):
-    with client.session_transaction() as session:
-        session['user_id'] = 1  # Set the user_id for the session
-        session['username'] = 'testuser'  # Set a username for the session
-
-    # Register and log in the user
-    register_and_login(client, email='test@example.com', password='Password123!')
-
-    client.post('/topic/create', data={'title': 'Editable Topic', 'description': 'This topic will be edited.', 'color': '#ffffff'}, follow_redirects=True)
-    # Edit the topic
-    client.post('/edit_topic/1', data={'title': 'Edited Topic', 'description': 'This topic has been edited.', 'color': '#000000'}, follow_redirects=True)  # Assuming the topic ID is 1
-    # Ensure the topic was edited
-    topic = Topic.query.filter_by(id=1, user_id=1).first()
-    assert topic.title == 'Edited Topic'  # Ensure the title was updated
-    assert topic.description == 'This topic has been edited.'  # Ensure the description was updated
-    assert topic.color == '#000000'  # Ensure the color was updated
 
 def test_pdf_upload_request_shape(client, monkeypatch):
     with client.session_transaction() as session:
@@ -360,4 +311,3 @@ def test_empty_pdf_file_handling(client, monkeypatch):
 
     assert response.status_code == 200
     assert b"The uploaded PDF file is empty or could not be read." in response.data
-

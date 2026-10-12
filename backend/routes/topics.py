@@ -1,44 +1,12 @@
-from flask import flash, redirect, url_for, render_template, request, session, Blueprint, jsonify, current_app
 from datetime import timezone
+
+from flask import Blueprint, current_app, jsonify, request, session
+
 from backend import db
-from backend.models import note
-from backend.models.models import User, Conversation, Note, Topic, db, Message
-from backend.utils.validation_helpers import login_required
-from backend import csrf
-import backend.services.topic_service as topic_service
+from backend.models.models import User
+from backend.services import topic_service
 
-topic_bp = Blueprint('topic', __name__)
-
-
-# API helper functions for handling JSON responses and errors.
-
-def json_payload():
-    data = request.get_json(silent=True)
-    if not isinstance(data, dict):
-        return None, api_error("invalid_json", "Expected a JSON object.", 400)
-
-    if (
-        not isinstance(data.get("title"), str)
-        or not isinstance(data.get("content"), str)
-        or "topic_id" not in data
-    ):
-        return None, api_error(
-            "invalid_fields",
-            "Title and content must be strings and topic_id is required.",
-            400,
-        )
-
-    topic_id = data["topic_id"]
-    if topic_id is not None and (
-            not isinstance(topic_id, int) or isinstance(topic_id, bool)
-        ):
-            return None, api_error(
-                "invalid_topic",
-                "topic_id must be an integer or null.",
-                400,
-            )
-    
-    return data, None
+topic_bp = Blueprint("topic", __name__)
 
 
 def api_json(data, status=200):
@@ -46,13 +14,10 @@ def api_json(data, status=200):
     response.headers["Cache-Control"] = "no-store"
     return response, status
 
-def internal_error(message):
-    db.session.rollback()
-    current_app.logger.exception("Notes API request failed.")
-    return api_error("internal_error", message, 500)
 
 def api_error(code, message, status):
     return api_json({"error": {"code": code, "message": message}}, status)
+
 
 def api_user_id():
     user_id = session.get("user_id")
@@ -66,10 +31,26 @@ def api_user_id():
             return None, api_error("unauthenticated", "Not authenticated.", 401)
     except Exception:
         db.session.rollback()
-        current_app.logger.exception("Could not validate the notes API session.")
-        return None, api_error("internal_error", "Unable to access notes.", 500)
+        current_app.logger.exception("Could not validate the topics API session.")
+        return None, api_error("internal_error", "Unable to access topics.", 500)
 
     return user_id, None
+
+
+def topic_payload():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return None, api_error("invalid_json", "Expected a JSON object.", 400)
+
+    fields = ("title", "description", "color")
+    if any(not isinstance(data.get(field), str) for field in fields):
+        return None, api_error(
+            "invalid_fields",
+            "Title, description, and color must be strings.",
+            400,
+        )
+    return data, None
+
 
 def serialize_timestamp(value):
     if value.tzinfo is None:
@@ -78,28 +59,86 @@ def serialize_timestamp(value):
         value = value.astimezone(timezone.utc)
     return value.isoformat().replace("+00:00", "Z")
 
-def serialize_topic(topic):
-    serialized = {
+
+def serialize_topic(topic, note_count):
+    return {
         "id": topic.id,
         "title": topic.title,
         "description": topic.description,
         "color": topic.color,
+        "note_count": note_count,
         "created_at": serialize_timestamp(topic.created_at),
         "updated_at": serialize_timestamp(topic.updated_at),
     }
-    
-    return serialized
 
 
-# Creating topic
-@topic_bp.post('/api/topic/create')
-def topic_create():
-    """Display the topic form or create a topic for the signed-in user."""
+def serialize_note_summary(note):
+    return {
+        "id": note.id,
+        "title": note.title,
+        "excerpt": " ".join(note.content.split())[:160],
+        "topic_id": note.topic_id,
+        "topic": {"id": note.topic.id, "title": note.topic.title}
+        if note.topic is not None
+        else None,
+        "created_at": serialize_timestamp(note.created_at),
+        "updated_at": serialize_timestamp(note.updated_at),
+    }
+
+
+def internal_error(message):
+    db.session.rollback()
+    current_app.logger.exception("Topics API request failed.")
+    return api_error("internal_error", message, 500)
+
+
+@topic_bp.get("/api/topics")
+def list_topics():
+    """Return the signed-in user's topic summaries."""
     user_id, error_response = api_user_id()
     if error_response:
         return error_response
 
-    data, error_response = json_payload()
+    try:
+        topic_counts = topic_service.list_topics(user_id)
+        return api_json({
+            "topics": [
+                serialize_topic(topic, note_count)
+                for topic, note_count in topic_counts
+            ]
+        })
+    except Exception:
+        return internal_error("Unable to load topics.")
+
+
+@topic_bp.get("/api/topics/<int:topic_id>")
+def get_topic(topic_id):
+    """Return an owned topic and its latest notes."""
+    user_id, error_response = api_user_id()
+    if error_response:
+        return error_response
+
+    try:
+        topic = topic_service.topic_view(topic_id, user_id)
+        notes = topic_service.list_topic_notes(topic.id, user_id)
+        return api_json({
+            "topic": serialize_topic(topic, len(notes)),
+            "notes": [serialize_note_summary(note) for note in notes],
+        })
+    except topic_service.TopicNotFoundError:
+        return api_error("not_found", "Topic not found.", 404)
+    except Exception:
+        return internal_error("Unable to load topic.")
+
+
+@topic_bp.post("/api/topics")
+def create_topic():
+    """Create a topic for the signed-in user."""
+    user_id, error_response = api_user_id()
+    if error_response:
+        return error_response
+
+    data, error_response = topic_payload()
     if error_response:
         return error_response
 
@@ -108,46 +147,23 @@ def topic_create():
             user_id=user_id,
             title=data["title"],
             description=data["description"],
-            color=data["color"])
-    except topic_service.InvalidTopicCreation:
-        return api_error(
-            "Invalid Data",
-            "This topic could not be created",
-            400,
+            color=data["color"],
         )
+        return api_json({"topic": serialize_topic(topic, 0)}, 201)
     except ValueError as error:
         return api_error("validation_error", str(error), 400)
     except Exception:
-        return internal_error("Unable to save topic")
-
-    return api_json({"topic": serialize_topic(topic)}, 201)
-
-#Topic Deletion
-@topic_bp.delete('/api/topic/delete')
-def delete_topic(topic_id):
-    """Delete an owned study topic and return to the home page."""
-    try:
-        topic_service.delete_topic(topic_id, session.get("user_id"))
-        return jsonify({
-            "success": True,
-            "message": "Topic deleted successfully",
-        }), 204
-    except ValueError as ve:
-        # Return error response with a 400 Bad Request
-        return jsonify({
-            "success": False,
-            "message": str(ve)
-        }), 400
+        return internal_error("Unable to save topic.")
 
 
-@topic_bp.patch('/api/edit/topic')
-def edit_topic(topic_id):
-    """Display the topic edit form or save changes to an owned topic."""
+@topic_bp.patch("/api/topics/<int:topic_id>")
+def update_topic(topic_id):
+    """Update an owned topic's title, description, and color."""
     user_id, error_response = api_user_id()
     if error_response:
         return error_response
 
-    data, error_response = json_payload()
+    data, error_response = topic_payload()
     if error_response:
         return error_response
 
@@ -157,39 +173,34 @@ def edit_topic(topic_id):
             user_id=user_id,
             title=data["title"],
             description=data["description"],
-            color=data["color"])
-    except ValueError as ve:
-        return api_error("validation_error", str(ve), 400)
+            color=data["color"],
+        )
+        note_count = len(topic_service.list_topic_notes(topic.id, user_id))
+        return api_json({"topic": serialize_topic(topic, note_count)})
+    except topic_service.TopicNotFoundError:
+        return api_error("not_found", "Topic not found.", 404)
+    except ValueError as error:
+        return api_error("validation_error", str(error), 400)
     except Exception:
-        return internal_error("Unable to edit topic")
-
-    return api_json({"topic": serialize_topic(topic)}, 200)
+        return internal_error("Unable to update topic.")
 
 
-@topic_bp.route('/api/topic/<int:topic_id>')
-def topic_view(topic_id):
-    """Display a topic and its notes after verifying user ownership."""
-    user_id, error_response = api_user_id()
-    if error_response:
-        return error_response
-    
-    try:
-        topic = topic_service.topic_view(topic_id, session.get("user_id"))
-    except ValueError as ve:
-        return api_error("validation_error", str(ve), 400)
-    return api_json({"topic": serialize_topic(topic)}, 200)  # Return the topic data as JSON
-
-@topic_bp.get('/api/topics')
-def topics_view():
-    """Return a list of topics owned by the signed-in user."""
+@topic_bp.delete("/api/topics/<int:topic_id>")
+def delete_topic(topic_id):
+    """Delete an owned topic only after its study data has been moved."""
     user_id, error_response = api_user_id()
     if error_response:
         return error_response
 
     try:
-        topics = topic_service.list_topics(user_id)
-        return api_json({
-            "topics": [serialize_topic(topic) for topic in topics]
-        })
+        topic_service.delete_topic(topic_id, user_id)
+    except topic_service.TopicNotFoundError:
+        return api_error("not_found", "Topic not found.", 404)
+    except topic_service.TopicNotEmptyError as error:
+        return api_error("topic_not_empty", str(error), 409)
     except Exception:
-        return internal_error("Unable to load topics.")
+        return internal_error("Unable to delete topic.")
+
+    response = current_app.response_class(status=204)
+    response.headers["Cache-Control"] = "no-store"
+    return response
