@@ -164,3 +164,55 @@ def api_view_note(note_id):
         return internal_error("Unable to load note.")
 
     return api_json({"note": serialize_note(note)})
+
+
+@note_bp.patch("/api/notes/<int:note_id>")
+def api_update_note(note_id):
+    user_id, error_response = api_user_id()
+    if error_response:
+        return error_response
+
+    data, error_response = json_payload()
+    if error_response:
+        return error_response
+
+    try:
+        note = note_service.update_note(
+            note_id=note_id,
+            user_id=user_id,
+            title=data["title"],
+            content=data["content"],
+            topic_id=data["topic_id"],
+        )
+    except note_service.NoteNotFoundError:
+        return api_error("not_found", "Note not found.", 404)
+    except note_service.InvalidTopicError:
+        return api_error(
+            "invalid_topic",
+            "Topic is invalid or unavailable.",
+            400,
+        )
+    except ValueError as error:
+        return api_error("validation_error", str(error), 400)
+    except Exception:
+        return internal_error("Unable to update note.")
+
+    return api_json({"note": serialize_note(note)})
+
+
+@note_bp.delete("/api/notes/<int:note_id>")
+def api_delete_note(note_id):
+    user_id, error_response = api_user_id()
+    if error_response:
+        return error_response
+
+    try:
+        note_service.delete_note(note_id, user_id)
+    except note_service.NoteNotFoundError:
+        return api_error("not_found", "Note not found.", 404)
+    except Exception:
+        return internal_error("Unable to delete note.")
+
+    response = current_app.response_class(status=204)
+    response.headers["Cache-Control"] = "no-store"
+    return response

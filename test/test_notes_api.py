@@ -3,7 +3,18 @@ from datetime import datetime
 import pytest
 
 from backend import db
-from backend.models.models import Note, Topic, User
+from backend.models.models import (
+    Conversation,
+    Flashcard,
+    FlashcardProgress,
+    Message,
+    Note,
+    QuizAttempt,
+    QuizQuestionAttempt,
+    StudyEvent,
+    Topic,
+    User,
+)
 
 
 def create_user(test_app, username="learner", email="learner@example.com"):
@@ -260,6 +271,283 @@ def test_read_note_returns_owned_note_and_hides_other_users_notes(
         assert hidden_response.json["error"]["code"] == "not_found"
         assert hidden_response.json["error"]["message"] == "Note not found."
         assert hidden_response.headers["Cache-Control"] == "no-store"
+
+
+def test_update_note_persists_content_and_topic_reassignment(client, test_app):
+    user_id = create_user(test_app)
+    first_topic_id = create_topic(test_app, user_id, title="First topic")
+    second_topic_id = create_topic(test_app, user_id, title="Second topic")
+    with test_app.app_context():
+        note = Note(
+            user_id=user_id,
+            topic_id=first_topic_id,
+            title="Original",
+            content="Original body",
+        )
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+    sign_in(client, user_id)
+
+    response = client.patch(
+        f"/api/notes/{note_id}",
+        json={
+            "title": "  Updated title  ",
+            "content": "Updated first line.\n\nUpdated second line.",
+            "topic_id": second_topic_id,
+            "user_id": user_id + 1,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.json["note"]["title"] == "Updated title"
+    assert response.json["note"]["content"] == "Updated first line.\n\nUpdated second line."
+    assert response.json["note"]["topic_id"] == second_topic_id
+    assert response.json["note"]["topic"] == {
+        "id": second_topic_id,
+        "title": "Second topic",
+    }
+    with test_app.app_context():
+        saved_note = db.session.get(Note, note_id)
+        assert saved_note.user_id == user_id
+        assert saved_note.title == "Updated title"
+        assert saved_note.content == "Updated first line.\n\nUpdated second line."
+        assert saved_note.topic_id == second_topic_id
+
+    unassigned_response = client.patch(
+        f"/api/notes/{note_id}",
+        json={
+            "title": "Updated title",
+            "content": "Updated body",
+            "topic_id": None,
+        },
+    )
+    assert unassigned_response.status_code == 200
+    assert unassigned_response.json["note"]["topic_id"] is None
+    assert unassigned_response.json["note"]["topic"] is None
+
+
+def test_update_note_rejects_foreign_topic_and_preserves_existing_note(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    foreign_topic_id = create_topic(test_app, other_user_id)
+    with test_app.app_context():
+        note = Note(user_id=user_id, title="Original", content="Original body")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+    sign_in(client, user_id)
+
+    response = client.patch(
+        f"/api/notes/{note_id}",
+        json={
+            "title": "Changed",
+            "content": "Changed body",
+            "topic_id": foreign_topic_id,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "invalid_topic"
+    with test_app.app_context():
+        note = db.session.get(Note, note_id)
+        assert note.title == "Original"
+        assert note.content == "Original body"
+        assert note.topic_id is None
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_message"),
+    [
+        ({"title": "", "content": "Body", "topic_id": None},
+         "Title is required."),
+        ({"title": "Title", "content": " ", "topic_id": None},
+         "Content is required."),
+        ({"title": "T" * 101, "content": "Body", "topic_id": None},
+         "Title cannot be longer than 100 characters."),
+        ({"title": "Title", "content": "C" * 5001, "topic_id": None},
+         "Content cannot be longer than 5000 characters."),
+    ],
+)
+def test_update_note_rejects_invalid_data_without_modifying_note(
+    client, test_app, payload, expected_message
+):
+    user_id = create_user(test_app)
+    with test_app.app_context():
+        note = Note(user_id=user_id, title="Original", content="Original body")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+    sign_in(client, user_id)
+
+    response = client.patch(f"/api/notes/{note_id}", json=payload)
+
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "validation_error"
+    assert response.json["error"]["message"] == expected_message
+    with test_app.app_context():
+        note = db.session.get(Note, note_id)
+        assert note.title == "Original"
+        assert note.content == "Original body"
+
+
+def test_update_and_delete_note_hide_missing_and_foreign_notes(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    with test_app.app_context():
+        note = Note(
+            user_id=other_user_id,
+            title="Private",
+            content="Do not modify or delete",
+        )
+        db.session.add(note)
+        db.session.commit()
+        foreign_note_id = note.id
+    sign_in(client, user_id)
+    payload = {"title": "Attempt", "content": "Attempt", "topic_id": None}
+
+    for note_id in (foreign_note_id, 999999):
+        update_response = client.patch(f"/api/notes/{note_id}", json=payload)
+        delete_response = client.delete(f"/api/notes/{note_id}")
+        assert update_response.status_code == 404
+        assert update_response.json["error"]["code"] == "not_found"
+        assert delete_response.status_code == 404
+        assert delete_response.json["error"]["code"] == "not_found"
+    with test_app.app_context():
+        note = db.session.get(Note, foreign_note_id)
+        assert note.title == "Private"
+        assert note.content == "Do not modify or delete"
+
+
+def test_delete_note_removes_note_and_dependent_study_data_only(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    topic_id = create_topic(test_app, user_id)
+    with test_app.app_context():
+        note = Note(
+            user_id=user_id,
+            topic_id=topic_id,
+            title="To delete",
+            content="Note body",
+        )
+        other_note = Note(
+            user_id=other_user_id,
+            title="Keep",
+            content="Unrelated note",
+        )
+        db.session.add_all([note, other_note])
+        db.session.flush()
+        flashcard = Flashcard(
+            user_id=user_id,
+            topic_id=topic_id,
+            note_id=note.id,
+            question="Question",
+            answer="Answer",
+        )
+        conversation = Conversation(user_id=user_id, note_id=note.id)
+        quiz_attempt = QuizAttempt(user_id=user_id, note_id=note.id)
+        db.session.add_all([flashcard, conversation, quiz_attempt])
+        db.session.flush()
+        progress = FlashcardProgress(
+            user_id=user_id,
+            flashcard_id=flashcard.id,
+        )
+        event = StudyEvent(
+            user_id=user_id,
+            flashcard_id=flashcard.id,
+            is_correct=True,
+        )
+        message = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content="Review",
+        )
+        question_attempt = QuizQuestionAttempt(
+            quiz_attempt_id=quiz_attempt.id,
+            flashcard_id=flashcard.id,
+            user_answer="Answer",
+            correct_answer="Answer",
+            is_correct=True,
+        )
+        db.session.add_all([progress, event, message, question_attempt])
+        db.session.commit()
+        note_id = note.id
+        other_note_id = other_note.id
+        flashcard_id = flashcard.id
+        conversation_id = conversation.id
+        quiz_attempt_id = quiz_attempt.id
+        progress_id = progress.id
+        event_id = event.id
+        message_id = message.id
+        question_attempt_id = question_attempt.id
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/notes/{note_id}")
+
+    assert response.status_code == 204
+    assert response.data == b""
+    assert response.headers["Cache-Control"] == "no-store"
+    with test_app.app_context():
+        assert db.session.get(Note, note_id) is None
+        assert db.session.get(Note, other_note_id) is not None
+        for model, record_id in (
+            (Flashcard, flashcard_id),
+            (FlashcardProgress, progress_id),
+            (StudyEvent, event_id),
+            (Conversation, conversation_id),
+            (Message, message_id),
+            (QuizAttempt, quiz_attempt_id),
+            (QuizQuestionAttempt, question_attempt_id),
+        ):
+            assert db.session.get(model, record_id) is None
+        assert db.session.get(Topic, topic_id) is not None
+
+
+def test_note_update_and_delete_require_csrf(client, test_app):
+    user_id = create_user(test_app)
+    with test_app.app_context():
+        note = Note(user_id=user_id, title="Title", content="Body")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+    sign_in(client, user_id)
+    test_app.config["WTF_CSRF_ENABLED"] = True
+
+    missing_token_responses = (
+        client.patch(
+            f"/api/notes/{note_id}",
+            json={"title": "Updated", "content": "Body", "topic_id": None},
+        ),
+        client.delete(f"/api/notes/{note_id}"),
+    )
+    token_response = client.get("/api/auth/csrf")
+    headers = {"X-CSRFToken": token_response.json["csrf_token"]}
+    update_response = client.patch(
+        f"/api/notes/{note_id}",
+        json={"title": "Updated", "content": "Body", "topic_id": None},
+        headers=headers,
+    )
+    delete_response = client.delete(f"/api/notes/{note_id}", headers=headers)
+
+    for response in missing_token_responses:
+        assert response.status_code == 400
+        assert response.json["error"]["code"] == "csrf_failed"
+        assert response.headers["Cache-Control"] == "no-store"
+    assert update_response.status_code == 200
+    assert delete_response.status_code == 204
 
 
 def test_note_mutation_enforces_csrf_and_returns_no_store_errors(
