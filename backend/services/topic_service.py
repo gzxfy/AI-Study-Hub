@@ -2,6 +2,8 @@ from backend import db
 from backend.models.models import Topic, db
 import backend.utils.validation_helpers as validation_helpers
 
+class InvalidTopicCreation(ValueError):
+    """Raise when a error in creating a topic"""
 
 def create_topic(user_id, title, description, color):
     """Validate and save a topic that organizes a user's study materials."""
@@ -43,3 +45,7 @@ def topic_view(topic_id, user_id):
     if topic.user_id != user_id:
         raise ValueError("You do not have permission to view this topic!")
     return topic
+
+def list_topics(user_id):
+    """Return a list of topics owned by the requesting user."""
+    return Topic.query.filter_by(user_id=user_id).all()
