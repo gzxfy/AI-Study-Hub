@@ -143,7 +143,13 @@ def review_study_mode():
             user_id=user_id,
             flashcard_id=flashcard_id,
             marked_correctly=marked_correctly,
+            request_id=(
+                request.headers.get("Idempotency-Key")
+                or request.headers.get("X-Request-ID")
+            ),
         )
+    except study_mode_service.IdempotencyConflictError as error:
+        return api_error("idempotency_conflict", str(error), 409)
     except study_mode_service.FlashcardNotFoundError:
         return api_error("not_found", "Flashcard not found.", 404)
     except ValueError as error:

@@ -16,6 +16,16 @@ class StudyEvent(db.Model):
     studied_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_correct = db.Column(db.Boolean, nullable=False)
     source = db.Column(db.String(50), nullable=True)
+    request_id = db.Column(db.String(128), nullable=True)
+
+    __table_args__ = (
+        db.Index(
+            "uq_study_events_user_request_id",
+            "user_id",
+            "request_id",
+            unique=True,
+        ),
+    )
 
     def __repr__(self):
         """Summarize the learner, flashcard, and result for debugging."""

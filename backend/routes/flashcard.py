@@ -33,8 +33,8 @@ def api_user_id():
             return None, api_error("unauthenticated", "Not authenticated.", 401)
     except Exception:
         db.session.rollback()
-        current_app.logger.exception("Could not validate the notes API session.")
-        return None, api_error("internal_error", "Unable to access notes.", 500)
+        current_app.logger.exception("Could not validate the flashcard API session.")
+        return None, api_error("internal_error", "Unable to access flashcards.", 500)
 
     return user_id, None
 
@@ -93,6 +93,39 @@ def json_payload(require_note_id=False):
 
     return data, None
 
+
+def patch_payload():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return None, api_error("invalid_json", "Expected a JSON object.", 400)
+
+    editable_fields = {"question", "answer", "difficulty"}
+    if not data or any(field not in editable_fields for field in data):
+        return None, api_error(
+            "invalid_fields",
+            "Provide one or more editable flashcard fields.",
+            400,
+        )
+
+    for field in ("question", "answer"):
+        if field in data and not isinstance(data[field], str):
+            return None, api_error(
+                "invalid_fields",
+                f"{field} must be a string.",
+                400,
+            )
+
+    if "difficulty" in data and data["difficulty"] is not None and not isinstance(
+        data["difficulty"], str
+    ):
+        return None, api_error(
+            "invalid_fields",
+            "difficulty must be a string or null.",
+            400,
+        )
+
+    return data, None
+
 def serialize_timestamp(value):
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
@@ -141,6 +174,8 @@ def api_create_flashcard():
             answer=data.get('answer'),
             difficulty=data.get('difficulty')
         )
+    except flashcard_service.InvalidFlashcardTopicError as error:
+        return api_error("invalid_topic", str(error), 400)
     except ValueError as error:
         return api_error("validation_error", str(error), 400)
     except Exception:
@@ -187,7 +222,7 @@ def api_update_flashcard(flashcard_id):
     if error_response:
         return error_response
 
-    data, error_response = json_payload()
+    data, error_response = patch_payload()
     if error_response:
         return error_response
 
@@ -195,14 +230,14 @@ def api_update_flashcard(flashcard_id):
         flashcard = flashcard_service.edit_flashcard(
             flashcard_id=flashcard_id,
             user_id=user_id,
-            question=data.get('question', ''),
-            answer=data.get('answer', ''),
-            difficulty=data.get('difficulty', '')
+            question=data.get("question", flashcard_service.UNSET),
+            answer=data.get("answer", flashcard_service.UNSET),
+            difficulty=data.get("difficulty", flashcard_service.UNSET),
         )
-        if not flashcard or flashcard.user_id != user_id:
-            return api_error("not_found", "Flashcard not found.", 404)
-    except ValueError as ve:
-        return api_error("validation_error", str(ve), 400)
+    except flashcard_service.FlashcardNotFoundError:
+        return api_error("not_found", "Flashcard not found.", 404)
+    except ValueError as error:
+        return api_error("validation_error", str(error), 400)
     except Exception:
         return internal_error("Unable to update flashcard.")
 
@@ -218,8 +253,10 @@ def api_delete_flashcard(flashcard_id):
 
     try:
         flashcard_service.delete_flashcard(flashcard_id, user_id)
-    except ValueError as ve:
-        return api_error("validation_error", str(ve), 400)
+    except flashcard_service.FlashcardNotFoundError:
+        return api_error("not_found", "Flashcard not found.", 404)
+    except flashcard_service.FlashcardInUseError as error:
+        return api_error("flashcard_in_use", str(error), 409)
     except Exception:
         return internal_error("Unable to delete flashcard.")
 

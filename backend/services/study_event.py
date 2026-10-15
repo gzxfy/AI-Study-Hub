@@ -2,7 +2,14 @@ import backend.utils.validation_helpers as validation_helpers
 from backend.models.models import StudyEvent, db
 from datetime import date, datetime, timedelta
 
-def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=None):
+def log_study_event(
+    user_id,
+    flashcard_id,
+    is_correct,
+    source=None,
+    studied_at=None,
+    request_id=None,
+):
     """Validate and stage a timestamped flashcard study event."""
     # Validate inputs
     validation_helpers.validate_study_event_data(user_id, flashcard_id, is_correct, source)
@@ -13,7 +20,8 @@ def log_study_event(user_id, flashcard_id, is_correct, source=None, studied_at=N
         flashcard_id=flashcard_id,
         is_correct=is_correct,
         source=source,
-        studied_at=studied_at or datetime.utcnow()  # Use UTC time for consistency
+        studied_at=studied_at or datetime.utcnow(),
+        request_id=request_id,
     )
 
     # Add the study event to the session and commit

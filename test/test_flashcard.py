@@ -1,7 +1,17 @@
 import pytest
 
 from backend import db
-from backend.models.models import Flashcard, Note, Topic, User
+from backend.models.models import (
+    Flashcard,
+    FlashcardProgress,
+    Note,
+    QuizAttempt,
+    QuizQuestionAttempt,
+    StudyEvent,
+    Topic,
+    User,
+)
+from sqlalchemy.exc import IntegrityError
 
 
 def create_user(test_app, username="learner", email="learner@example.com"):
@@ -208,6 +218,42 @@ def test_create_flashcard_rejects_a_note_owned_by_another_user(client, test_app)
         assert Flashcard.query.count() == 0
 
 
+@pytest.mark.parametrize("association", ["foreign_topic", "topic_mismatch", "missing_topic"])
+def test_create_flashcard_rejects_invalid_topic_associations(
+    client, test_app, association
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    with test_app.app_context():
+        owned_topic = Topic(user_id=user_id, title="Owned topic")
+        foreign_topic = Topic(user_id=other_user_id, title="Private topic")
+        db.session.add_all([owned_topic, foreign_topic])
+        db.session.commit()
+        owned_topic_id = owned_topic.id
+        foreign_topic_id = foreign_topic.id
+
+    note_topic_id = owned_topic_id if association == "missing_topic" else None
+    note_id = create_note(test_app, user_id, topic_id=note_topic_id)
+    request_topic_id = {
+        "foreign_topic": foreign_topic_id,
+        "topic_mismatch": owned_topic_id,
+        "missing_topic": None,
+    }[association]
+    sign_in(client, user_id)
+
+    response = client.post(
+        "/api/flashcards",
+        json=flashcard_payload(note_id, topic_id=request_topic_id),
+    )
+
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "invalid_topic"
+    with test_app.app_context():
+        assert Flashcard.query.count() == 0
+
+
 def test_list_flashcards_returns_only_the_users_flashcards(client, test_app):
     user_id = create_user(test_app)
     other_user_id = create_user(
@@ -286,6 +332,84 @@ def test_update_flashcard_persists_question_answer_and_difficulty(
         assert saved_flashcard.difficulty == "hard"
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected_question", "expected_answer", "expected_difficulty"),
+    [
+        ({"question": "Updated question"}, "Updated question", "A way to organize relational data.", "medium"),
+        ({"answer": "Updated answer"}, "What is normalization?", "Updated answer", "medium"),
+        ({"difficulty": None}, "What is normalization?", "A way to organize relational data.", None),
+        ({"difficulty": ""}, "What is normalization?", "A way to organize relational data.", None),
+    ],
+)
+def test_patch_flashcard_updates_only_supplied_fields(
+    client,
+    test_app,
+    payload,
+    expected_question,
+    expected_answer,
+    expected_difficulty,
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.patch(f"/api/flashcards/{flashcard_id}", json=payload)
+
+    assert response.status_code == 200
+    updated = response.json["flashcard"]
+    assert updated["question"] == expected_question
+    assert updated["answer"] == expected_answer
+    assert updated["difficulty"] == expected_difficulty
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_id)
+        assert saved_flashcard.question == expected_question
+        assert saved_flashcard.answer == expected_answer
+        assert saved_flashcard.difficulty == expected_difficulty
+
+
+def test_patch_flashcard_rejects_invalid_update_without_changing_saved_card(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.patch(
+        f"/api/flashcards/{flashcard_id}",
+        json={"question": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "validation_error"
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_id)
+        assert saved_flashcard.question == "What is normalization?"
+
+
+def test_patch_flashcard_returns_not_found_for_unavailable_card(client, test_app):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    other_note_id = create_note(test_app, other_user_id)
+    other_flashcard_id = create_flashcard(test_app, other_user_id, other_note_id)
+    sign_in(client, user_id)
+
+    responses = (
+        client.patch(
+            f"/api/flashcards/{other_flashcard_id}",
+            json={"question": "Try edit"},
+        ),
+        client.patch("/api/flashcards/999999", json={"question": "Missing"}),
+    )
+
+    for response in responses:
+        assert response.status_code == 404
+        assert response.json["error"]["code"] == "not_found"
+
+
 def test_delete_flashcard_removes_owned_card(client, test_app):
     user_id = create_user(test_app)
     note_id = create_note(test_app, user_id)
@@ -314,6 +438,90 @@ def test_delete_flashcard_does_not_delete_another_users_card(client, test_app):
 
     response = client.delete(f"/api/flashcards/{other_flashcard_id}")
 
-    assert response.status_code == 400
+    assert response.status_code == 404
+    assert response.json["error"]["code"] == "not_found"
     with test_app.app_context():
         assert db.session.get(Flashcard, other_flashcard_id) is not None
+
+
+@pytest.mark.parametrize(
+    "history_type",
+    ["progress", "study_event", "quiz_answer", "quiz_selection"],
+)
+def test_delete_flashcard_with_history_returns_conflict(
+    client, test_app, history_type
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    with test_app.app_context():
+        db.session.execute(db.text("PRAGMA foreign_keys=ON"))
+        assert db.session.execute(db.text("PRAGMA foreign_keys")).scalar() == 1
+
+        if history_type == "progress":
+            db.session.add(FlashcardProgress(
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                times_seen=1,
+                times_correct=1,
+            ))
+        elif history_type == "study_event":
+            db.session.add(StudyEvent(
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                is_correct=True,
+                source="study_mode",
+            ))
+        else:
+            attempt = QuizAttempt(
+                user_id=user_id,
+                note_id=note_id,
+                question_order=[flashcard_id],
+            )
+            db.session.add(attempt)
+            if history_type == "quiz_answer":
+                db.session.flush()
+                db.session.add(QuizQuestionAttempt(
+                    quiz_attempt_id=attempt.id,
+                    flashcard_id=flashcard_id,
+                    user_answer="A way to organize relational data.",
+                    correct_answer="A way to organize relational data.",
+                    is_correct=True,
+                    time_taken=1.0,
+                ))
+        db.session.commit()
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{flashcard_id}")
+
+    assert response.status_code == 409
+    assert response.json["error"]["code"] == "flashcard_in_use"
+    with test_app.app_context():
+        assert db.session.get(Flashcard, flashcard_id) is not None
+
+
+def test_sqlite_foreign_key_rejects_referenced_flashcard_delete(client, test_app):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    with test_app.app_context():
+        db.session.execute(db.text("PRAGMA foreign_keys=ON"))
+        db.session.add(StudyEvent(
+            user_id=user_id,
+            flashcard_id=flashcard_id,
+            is_correct=True,
+            source="test",
+        ))
+        db.session.commit()
+        with pytest.raises(IntegrityError):
+            db.session.execute(
+                db.text("DELETE FROM flashcards WHERE id = :flashcard_id"),
+                {"flashcard_id": flashcard_id},
+            )
+            db.session.commit()
+        db.session.rollback()
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{flashcard_id}")
+
+    assert response.status_code == 409

@@ -1,14 +1,20 @@
 import random
 from datetime import datetime
 
+from sqlalchemy.exc import IntegrityError
+
 from backend import db
-from backend.models.models import Flashcard, FlashcardProgress
+from backend.models.models import Flashcard, FlashcardProgress, StudyEvent
 from backend.services.study_event import log_study_event
 from backend.utils.validation_helpers import validate_study_difficulty
 
 
 class FlashcardNotFoundError(ValueError):
     """Raised when a requested flashcard is not available to the user."""
+
+
+class IdempotencyConflictError(ValueError):
+    """Raised when a request ID is reused for a different review."""
 
 
 def _validate_positive_id(value, field_name):
@@ -88,17 +94,56 @@ def start_study_mode(
     return cards
 
 
-def review_flashcard(user_id, flashcard_id, marked_correctly):
+def _existing_review_progress(user_id, flashcard_id, marked_correctly, request_id):
+    event = StudyEvent.query.filter_by(
+        user_id=user_id,
+        request_id=request_id,
+    ).first()
+    if event is None:
+        return None
+    if event.flashcard_id != flashcard_id or event.is_correct != marked_correctly:
+        raise IdempotencyConflictError(
+            "This request ID was already used for a different review."
+        )
+
+    progress = FlashcardProgress.query.filter_by(
+        user_id=user_id,
+        flashcard_id=flashcard_id,
+    ).first()
+    if progress is None:
+        raise RuntimeError("A saved review is missing its flashcard progress.")
+    return progress
+
+
+def review_flashcard(
+    user_id, flashcard_id, marked_correctly, request_id=None
+):
     """Persist one review event and update the user's card progress atomically."""
     _validate_positive_id(user_id, "user_id")
     _validate_positive_id(flashcard_id, "flashcard_id")
     if not isinstance(marked_correctly, bool):
         raise ValueError("marked_correctly must be a boolean.")
+    if request_id is not None and (
+        not isinstance(request_id, str)
+        or not request_id.strip()
+        or len(request_id) > 128
+    ):
+        raise ValueError("request_id must be a non-empty string up to 128 characters.")
+
+    if request_id is not None:
+        existing_progress = _existing_review_progress(
+            user_id,
+            flashcard_id,
+            marked_correctly,
+            request_id,
+        )
+        if existing_progress is not None:
+            return existing_progress
 
     flashcard = Flashcard.query.filter_by(
         id=flashcard_id,
         user_id=user_id,
-    ).first()
+    ).with_for_update().first()
     if flashcard is None:
         raise FlashcardNotFoundError("Flashcard not found.")
 
@@ -123,6 +168,7 @@ def review_flashcard(user_id, flashcard_id, marked_correctly):
             flashcard_id=flashcard_id,
             is_correct=marked_correctly,
             source="study_mode",
+            request_id=request_id,
         )
 
         progress.times_seen += 1
@@ -135,6 +181,18 @@ def review_flashcard(user_id, flashcard_id, marked_correctly):
         progress.progress = progress.times_correct / progress.times_seen
         progress.last_seen = datetime.utcnow()
         db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        if request_id is not None:
+            existing_progress = _existing_review_progress(
+                user_id,
+                flashcard_id,
+                marked_correctly,
+                request_id,
+            )
+            if existing_progress is not None:
+                return existing_progress
+        raise
     except Exception:
         db.session.rollback()
         raise

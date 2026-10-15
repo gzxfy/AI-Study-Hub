@@ -16,6 +16,6 @@ class FlashcardProgress(db.Model):
     times_seen = db.Column(db.Integer, default=0)
     times_correct = db.Column(db.Integer, default=0)
     streak = db.Column(db.Integer, default=0)
-    progress = db.Column(db.Integer, default=0)
+    progress = db.Column(db.Float, default=0.0)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
