@@ -96,6 +96,16 @@ def validate_item_data(title, description, price, url):
     return True
 
 # Validation helper function for notes
+def validate_note_ownership(note_id, user_id):
+    """Ensure that the note belongs to the specified user."""
+    from backend.models.models import Note
+    note = Note.query.get(note_id)
+    if not note:
+        raise ValueError("Note not found.")
+    if note.user_id != user_id:
+        raise ValueError("You do not have permission to access this note.")
+    return True
+
 def validate_note_data(title, content):
     """Check required note fields and their maximum lengths."""
     if not title or title.strip() == "":

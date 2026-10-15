@@ -1,9 +1,13 @@
-from backend.models.models import Flashcard, db
+from backend.models.models import Flashcard, User, db
 import backend.utils.validation_helpers as validation_helpers
 
 def create_flashcard(user_id, topic_id, note_id, question, answer, difficulty=None):
     """Validate and persist a flashcard associated with a user's note."""
-    validation_helpers.validate_flashcard_data(question, answer, difficulty)
+    # validates if note belongs to the user
+    validation_helpers.validate_note_ownership(note_id, user_id)
+
+    # validates the flashcard data
+    validation_helpers.validate_flashcard_data(question, answer, difficulty)  # raises ValueError if invalid
     flashcard = Flashcard(user_id=user_id, topic_id=topic_id, note_id=note_id, question=question, answer=answer, difficulty=difficulty)
     db.session.add(flashcard)
     db.session.commit()

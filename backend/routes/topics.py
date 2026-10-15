@@ -91,7 +91,7 @@ def internal_error(message):
     current_app.logger.exception("Topics API request failed.")
     return api_error("internal_error", message, 500)
 
-
+# Topics API routes
 @topic_bp.get("/api/topics")
 def list_topics():
     """Return the signed-in user's topic summaries."""

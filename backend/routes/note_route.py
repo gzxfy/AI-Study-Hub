@@ -129,12 +129,12 @@ def api_create_note():
         return error_response
 
     try:
-        topic_id = data["topic_id"]
+        
         note = note_service.create_note(
             user_id=user_id,
             title=data["title"],
             content=data["content"],
-            topic_id=topic_id,
+            topic_id=data["topic_id"],
         )
     except note_service.InvalidTopicError:
         return api_error(
