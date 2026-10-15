@@ -9,7 +9,7 @@ export default function RequestError({ error, onRetry }) {
       {error.status === 401 ? (
         <Link className="text-link" to="/login" state={{ returnTo: pathname }}>Log in</Link>
       ) : onRetry && (
-        <button className="text-button" onClick={onRetry}>Try again</button>
+        <button type="button" className="text-button" onClick={onRetry}>Try again</button>
       )}
     </div>
   );

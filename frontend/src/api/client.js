@@ -27,6 +27,9 @@ export async function request(path, { body, method = 'GET', signal, headers } = 
     throw new ApiError('Unable to reach Study Hub. Check your connection and try again.');
   }
 
+  if (response.redirected && new URL(response.url).pathname.startsWith('/api/auth/login')) {
+    throw new ApiError('Your session has expired. Log in to continue.', 401);
+  }
   if (response.status === 204) return null;
   const data = await response.json().catch(() => null);
 
@@ -34,7 +37,7 @@ export async function request(path, { body, method = 'GET', signal, headers } = 
     const fallback = response.status >= 500
       ? 'Study Hub is temporarily unavailable. Please try again shortly.'
       : 'The request could not be completed. Please try again.';
-    throw new ApiError(data?.error?.message || fallback, response.status, data?.error?.code);
+    throw new ApiError((typeof data?.error === 'string' ? data.error : data?.error?.message) || fallback, response.status, data?.error?.code);
   }
 
   if (!data || typeof data !== 'object') {

@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    // Only future API requests go to Flask. React owns /app/* URLs.
-    proxy: { '/api': 'http://127.0.0.1:5000' },
+    // Study currently uses legacy JSON paths; keep those paths intact.
+    proxy: { '/api': 'http://127.0.0.1:5000', '/study_mode': 'http://127.0.0.1:5000' },
   },
 });

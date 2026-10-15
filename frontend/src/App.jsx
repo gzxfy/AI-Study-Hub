@@ -3,7 +3,9 @@ import RequireAuth from './auth/RequireAuth';
 import AppLayout from './layouts/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import AuthPage from './pages/AuthPage';
-import FeaturePage from './pages/FeaturePage';
+import FlashcardsPage from './pages/FlashcardsPage';
+import FlashcardEditorPage from './pages/FlashcardEditorPage';
+import FlashcardStudyPage from './pages/FlashcardStudyPage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotesPage from './pages/NotesPage';
 import CreateNotePage from './pages/CreateNotePage';
@@ -15,11 +17,6 @@ import TopicPage from './pages/TopicPage';
 import TopicEditorPage from './pages/TopicEditorPage';
 import AssistantPage from './pages/AssistantPage';
 
-const features = [
-  { path: 'flashcards', title: 'Flashcards', description: 'Review key concepts from your notes.' },
-  { path: 'study', title: 'Study', description: 'Set aside time to practice what you have learned.' },
-];
-
 const router = createBrowserRouter(createRoutesFromElements(
     <>
       <Route element={<AppLayout />}>
@@ -27,6 +24,10 @@ const router = createBrowserRouter(createRoutesFromElements(
         <Route path="app" element={<DashboardPage />} />
         <Route path="logout" element={<LogoutPage />} />
         <Route element={<RequireAuth />}>
+          <Route path="app/flashcards" element={<FlashcardsPage />} />
+          <Route path="app/flashcards/new" element={<FlashcardEditorPage />} />
+          <Route path="app/flashcards/:cardId/edit" element={<FlashcardEditorPage />} />
+          <Route path="app/study" element={<FlashcardStudyPage />} />
           <Route path="app/assistant" element={<AssistantPage />} />
           <Route path="app/notes" element={<NotesPage />} />
           <Route path="app/notes/new" element={<CreateNotePage />} />
@@ -37,9 +38,6 @@ const router = createBrowserRouter(createRoutesFromElements(
           <Route path="app/topics/:topicId" element={<TopicPage />} />
           <Route path="app/topics/:topicId/edit" element={<TopicEditorPage />} />
         </Route>
-        {features.map(({ path, ...props }) => (
-          <Route key={path} path={`app/${path}`} element={<FeaturePage {...props} />} />
-        ))}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="login" element={<AuthPage key="login" mode="login" />} />
