@@ -1,87 +1,171 @@
 import random
-from backend.models.models import FlashcardProgress, Flashcard
-from backend import db
 from datetime import datetime
 
-from backend.utils.validation_helpers import validate_study_difficulty
+from backend import db
+from backend.models.models import Flashcard, FlashcardProgress
 from backend.services.study_event import log_study_event
+from backend.utils.validation_helpers import validate_study_difficulty
+
+
+class FlashcardNotFoundError(ValueError):
+    """Raised when a requested flashcard is not available to the user."""
+
+
+def _validate_positive_id(value, field_name):
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{field_name} must be a positive integer.")
+
+
+def _validate_study_filters(user_id, note_id, difficulty, card_count):
+    _validate_positive_id(user_id, "user_id")
+    _validate_positive_id(note_id, "note_id")
+    if card_count is not None and (
+        not isinstance(card_count, int)
+        or isinstance(card_count, bool)
+        or card_count <= 0
+    ):
+        raise ValueError("card_count must be a positive integer.")
+    if difficulty is not None and not isinstance(difficulty, str):
+        raise ValueError("difficulty must be a string.")
+    validate_study_difficulty(difficulty or None, card_count)
+
 
 def load_flashcards_for_study(user_id, note_id, difficulty=None, card_count=None):
-    """Select and shuffle a user's note flashcards using optional study filters."""
-    validate_study_difficulty(difficulty, card_count)
-    
+    """Load a user's flashcards for one note using optional study filters."""
+    _validate_study_filters(user_id, note_id, difficulty, card_count)
+
     query = Flashcard.query.filter_by(user_id=user_id, note_id=note_id)
     if difficulty:
         query = query.filter_by(difficulty=difficulty)
 
     cards = query.all()
     random.shuffle(cards)
-
-    if card_count:
+    if card_count is not None:
         cards = cards[:card_count]
     return cards
 
-def start_study_mode(user_id, note_id, difficulty=None, card_count=None, priority=None):
-    """Choose study cards and optionally prioritize cards with weaker mastery."""
-    cards = load_flashcards_for_study(user_id=user_id, 
-                                      note_id=note_id, 
-                                      difficulty=difficulty,
-                                      card_count=card_count)
+
+def _priority_key(card, progress_by_card):
+    progress = progress_by_card.get(card.id)
+    if progress is None or progress.times_seen == 0:
+        return 0.0, 0, card.id
+
+    accuracy = progress.times_correct / progress.times_seen
+    return accuracy, progress.times_seen, card.id
+
+
+def start_study_mode(
+    user_id, note_id, difficulty=None, card_count=None, priority=False
+):
+    """Choose a user's eligible cards, optionally ranking weaker cards first."""
+    _validate_study_filters(user_id, note_id, difficulty, card_count)
+    if priority is None:
+        priority = False
+    if not isinstance(priority, bool):
+        raise ValueError("priority must be a boolean.")
+
+    query = Flashcard.query.filter_by(user_id=user_id, note_id=note_id)
+    if difficulty:
+        query = query.filter_by(difficulty=difficulty)
+    cards = query.all()
+
     if priority and cards:
-        cards_id = [card.id for card in cards]
-        progress_rows = FlashcardProgress.query.filter(FlashcardProgress.user_id==user_id, FlashcardProgress.flashcard_id.in_(cards_id)).all()
-        progress_by_card = {p.flashcard_id: p for p in progress_rows}
+        card_ids = [card.id for card in cards]
+        progress_rows = FlashcardProgress.query.filter(
+            FlashcardProgress.user_id == user_id,
+            FlashcardProgress.flashcard_id.in_(card_ids),
+        ).all()
+        progress_by_card = {
+            progress.flashcard_id: progress for progress in progress_rows
+        }
+        # Rank the full eligible set before limiting so priority is meaningful.
+        cards.sort(key=lambda card: _priority_key(card, progress_by_card))
+    else:
+        random.shuffle(cards)
 
-        def weakness_key(card):
-            """Sort unseen or low-accuracy cards ahead of well-known cards."""
-            p = progress_by_card.get(card.id)
-            if not p or p.times_seen == 0:
-                return (0.0, 0)
-            accuracy = p.times_correct / p.times_seen
-            return (accuracy, p.times_seen)
-        
-        cards.sort(key=weakness_key)
-
-        if card_count:
-            cards = cards[:card_count]
+    if card_count is not None:
+        cards = cards[:card_count]
     return cards
 
 
 def review_flashcard(user_id, flashcard_id, marked_correctly):
-    """Record a flashcard result and update the user's mastery statistics."""
-    flashcard = Flashcard.query.filter_by(id=flashcard_id, user_id=user_id).first()
-    if not flashcard:
-        raise ValueError("Flashcard not found.")
-    
-    progress = FlashcardProgress.query.filter_by(user_id=user_id, flashcard_id=flashcard_id).first()
-    if not progress:
-        progress = FlashcardProgress(user_id=user_id, flashcard_id=flashcard_id, times_seen=0, times_correct=0, streak=0, progress=0)
-        db.session.add(progress)  # Add the new progress record to the session
-    
-    log_study_event(user_id=user_id, flashcard_id=flashcard_id, is_correct=marked_correctly, source='study_mode')
-    db.session.commit()  # Commit the study event to ensure it's saved before proceeding
-    
-    progress.times_seen += 1
-    if marked_correctly:
-        progress.times_correct += 1
-        progress.streak += 1
-    else:
-        progress.streak = 0  # Reset the streak if answered incorrectly
+    """Persist one review event and update the user's card progress atomically."""
+    _validate_positive_id(user_id, "user_id")
+    _validate_positive_id(flashcard_id, "flashcard_id")
+    if not isinstance(marked_correctly, bool):
+        raise ValueError("marked_correctly must be a boolean.")
 
-    progress.progress = progress.times_correct / progress.times_seen if progress.times_seen > 0 else 0  # Update the progress as a fraction of correct answers
-    progress.last_seen = datetime.utcnow()  # Update the last seen timestamp
-    db.session.commit()
+    flashcard = Flashcard.query.filter_by(
+        id=flashcard_id,
+        user_id=user_id,
+    ).first()
+    if flashcard is None:
+        raise FlashcardNotFoundError("Flashcard not found.")
+
+    try:
+        progress = FlashcardProgress.query.filter_by(
+            user_id=user_id,
+            flashcard_id=flashcard_id,
+        ).first()
+        if progress is None:
+            progress = FlashcardProgress(
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                times_seen=0,
+                times_correct=0,
+                streak=0,
+                progress=0,
+            )
+            db.session.add(progress)
+
+        log_study_event(
+            user_id=user_id,
+            flashcard_id=flashcard_id,
+            is_correct=marked_correctly,
+            source="study_mode",
+        )
+
+        progress.times_seen += 1
+        if marked_correctly:
+            progress.times_correct += 1
+            progress.streak += 1
+        else:
+            progress.streak = 0
+
+        progress.progress = progress.times_correct / progress.times_seen
+        progress.last_seen = datetime.utcnow()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
     return progress
 
-def end_study_mode(user_id, reviewed_results):
-    """Summarize reviewed-card count and accuracy for a study session."""
-    reviewed_count = len(reviewed_results)
-    correct_count = sum(1 for result in reviewed_results if result.get("correct"))
-    accuracy = round((correct_count / reviewed_count) * 100, 2) if reviewed_count > 0 else 0
 
+def end_study_mode(user_id, reviewed_results):
+    """Summarize a validated list of confirmed results for the session."""
+    _validate_positive_id(user_id, "user_id")
+    if not isinstance(reviewed_results, list):
+        raise ValueError("reviewed_results must be a list.")
+
+    correct_count = 0
+    for result in reviewed_results:
+        if not isinstance(result, dict):
+            raise ValueError("Each reviewed result must be an object.")
+        _validate_positive_id(result.get("flashcard_id"), "flashcard_id")
+        if not isinstance(result.get("correct"), bool):
+            raise ValueError("Each reviewed result must include a boolean correct value.")
+        correct_count += result["correct"]
+
+    reviewed_count = len(reviewed_results)
+    accuracy = (
+        round((correct_count / reviewed_count) * 100, 2)
+        if reviewed_count
+        else 0
+    )
     return {
         "user_id": user_id,
         "reviewed_count": reviewed_count,
         "correct_count": correct_count,
-        "accuracy": accuracy
+        "accuracy": accuracy,
     }
