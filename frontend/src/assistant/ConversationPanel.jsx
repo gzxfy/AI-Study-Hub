@@ -6,12 +6,15 @@ import RequestError from '../components/RequestError';
 import useResource from '../hooks/useResource';
 import UnsavedChangesDialog from '../notes/UnsavedChangesDialog';
 import ConversationMessages from './ConversationMessages';
+import SourcePreview from './SourcePreview';
+import { nextAttempt } from './requestAttempt';
 
 const suggestions = [
-  'Summarize the main ideas in this note.',
-  'Explain the most important concept with an example.',
-  'Ask me a question to check my understanding.',
+  { title: 'Summarize', detail: 'Find the ideas that matter.', prompt: 'Summarize the main ideas in this note with a short list of key takeaways.' },
+  { title: 'Explain simply', detail: 'Break it down, step by step.', prompt: 'Explain the most important concept in this note in simple terms, with a concrete example.' },
+  { title: 'Quiz me', detail: 'Check what you understand.', prompt: 'Quiz me on this note. Ask one question at a time and wait for my answer before explaining.' },
 ];
+const EMPTY_MESSAGES = [];
 
 export default function ConversationPanel({ note }) {
   const load = useCallback((signal) => getConversation(note.id, signal), [note.id]);
@@ -21,10 +24,15 @@ export default function ConversationPanel({ note }) {
   const [includeTopic, setIncludeTopic] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(null);
+  const [showSource, setShowSource] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const busy = useRef(false);
+  const title = useRef(null);
   const requestController = useRef(null);
   const lastAttempt = useRef(null);
   const composer = useRef(null);
-  const messages = reply?.messages ?? history.data?.messages ?? [];
+  const messages = reply?.messages ?? history.data?.messages ?? EMPTY_MESSAGES;
   const ready = !history.loading && !history.error;
   const dirty = question.length > 0 || pending;
   const blocker = useBlocker(({ currentLocation, nextLocation }) => (
@@ -32,6 +40,13 @@ export default function ConversationPanel({ note }) {
   ));
 
   useEffect(() => () => requestController.current?.abort(), []);
+  useEffect(() => { title.current?.focus(); }, [note.id]);
+  useEffect(() => {
+    setSlow(false);
+    if (!pending) return;
+    const timer = setTimeout(() => setSlow(true), 15000);
+    return () => clearTimeout(timer);
+  }, [pending]);
   useBeforeUnload(useCallback((event) => {
     if (dirty) {
       event.preventDefault();
@@ -42,28 +57,30 @@ export default function ConversationPanel({ note }) {
   async function handleSubmit(event) {
     event.preventDefault();
     const message = question.trim();
-    if (!message || message.length > QUESTION_LIMIT || pending || !ready) return;
+    if (!message || message.length > QUESTION_LIMIT || busy.current || !ready) return;
 
-    // Reuse the request ID after an uncertain response to avoid duplicate AI calls.
-    const previous = lastAttempt.current;
-    const payload = previous?.message === message && previous.include_topic === includeTopic
-      ? previous
-      : { message, include_topic: includeTopic, request_id: crypto.randomUUID() };
+    // Reuse the request ID so Flask can recognize a previously saved exchange.
+    const payload = nextAttempt(lastAttempt.current, message, includeTopic);
     lastAttempt.current = payload;
     requestController.current = new AbortController();
+    busy.current = true;
     setPending(true);
     setError(null);
+    setAnnouncement('Sending your question. The assistant is preparing a response.');
 
     try {
       const result = await sendMessage(note.id, payload, requestController.current.signal);
       setReply(result);
       setQuestion('');
       lastAttempt.current = null;
+      setAnnouncement('Response received and conversation saved. The latest response is in the conversation history.');
     } catch (failure) {
       if (failure.name !== 'AbortError') setError(failure);
     } finally {
-      setPending(false);
-      composer.current?.focus();
+      busy.current = false;
+      if (!requestController.current.signal.aborted) {
+        setPending(false);
+      }
     }
   }
 
@@ -81,12 +98,13 @@ export default function ConversationPanel({ note }) {
   return (
     <section className="panel conversation-panel" aria-label={`Assistant for ${note.title}`}>
       <header className="conversation-header">
-        <div><span className="conversation-label">Studying</span><h2>{note.title}</h2></div>
+        <div><span className="conversation-label">Studying · saved conversation</span><h2 ref={title} tabIndex={-1}>{note.title}</h2></div>
         <div className="record-actions">
-          <Link className="text-link" to={`/app/notes/${note.id}`}>Open note <Icon name="arrow" size={14} /></Link>
+          <button className="text-button" aria-expanded={showSource} aria-controls="assistant-source-preview" onClick={() => setShowSource(!showSource)}>{showSource ? 'Hide note' : 'View note'}</button>
           <button className="text-button" disabled={pending || history.loading} onClick={reloadConversation}>Reload history</button>
         </div>
       </header>
+      <div id="assistant-source-preview" hidden={!showSource}>{showSource && <SourcePreview noteId={note.id} />}</div>
       <div className="conversation-context">
         <Icon name="notes" size={16} />
         <span>{includeTopic ? `Next question: this note and related notes in ${note.topic?.title || 'its topic'}` : 'Next question: this note'}</span>
@@ -96,6 +114,7 @@ export default function ConversationPanel({ note }) {
         </label>
       </div>
       {!note.topic_id && <p className="context-hint">Assign this note to a topic to include related notes.</p>}
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
 
       {history.loading ? <p className="page-status" role="status">Loading conversation…</p> : history.error ? (
         <RequestError error={history.error} onRetry={history.reload} />
@@ -105,13 +124,13 @@ export default function ConversationPanel({ note }) {
           <h2>Work through your notes.</h2>
           <p>Ask for an explanation, review the main ideas, or check what you understand.</p>
           <div className="question-suggestions">
-            {suggestions.map((suggestion) => <button key={suggestion} onClick={() => useSuggestion(suggestion)}>{suggestion}<Icon name="arrow" size={14} /></button>)}
+            {suggestions.map((suggestion) => <button key={suggestion.title} onClick={() => useSuggestion(suggestion.prompt)}><span><strong>{suggestion.title}</strong><small>{suggestion.detail}</small></span><Icon name="arrow" size={16} /></button>)}
           </div>
         </div>
-      ) : <ConversationMessages messages={messages} pending={pending} />}
+      ) : <ConversationMessages messages={messages} pending={pending} pendingQuestion={lastAttempt.current?.message} />}
 
       <form className="message-composer" onSubmit={handleSubmit} aria-busy={pending}>
-        <label className="sr-only" htmlFor="assistant-question">Your question</label>
+        <label className="composer-label" htmlFor="assistant-question">Your question</label>
         <textarea
           ref={composer}
           id="assistant-question"
@@ -119,7 +138,8 @@ export default function ConversationPanel({ note }) {
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Ask a question about your notes…"
           maxLength={QUESTION_LIMIT}
-          disabled={pending || !ready}
+          readOnly={pending}
+          disabled={!ready}
           aria-describedby="question-hint"
           onKeyDown={(event) => {
             if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) {
@@ -140,7 +160,8 @@ export default function ConversationPanel({ note }) {
             {error.status === 401 && <Link className="text-link" to="/login" target="_blank" rel="noopener noreferrer">Log in in a new tab</Link>}
           </div>
         )}
-        <p className="assistant-footnote">Responses can contain mistakes. Check important details against your notes.</p>
+        {slow && pending && <p className="assistant-slow" role="status">This is taking longer than usual. You can keep reading above while the response is prepared.</p>}
+        <p className="assistant-footnote">Enter adds a new line. AI can make mistakes; check answers against your material.</p>
       </form>
       <UnsavedChangesDialog blocker={blocker} saving={pending} subject="conversation" />
     </section>
