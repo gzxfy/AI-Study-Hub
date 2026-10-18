@@ -79,6 +79,13 @@ tbody tr:hover { background: #fcfdfb; }
 .workspace-tip p { color: var(--muted); font-size: 10px; margin-top: 3px; }
 .workspace-tip > a { margin-left: auto; }
 .planning-panel { padding: 21px; }
+.progress-panel .section-heading { margin-bottom: 15px; }
+.progress-panel .section-heading > svg { color: var(--accent); }
+.progress-metric { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 0; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+.progress-metric strong { color: #303b34; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.progress-panel .panel-footnote { margin-top: 10px; }
+.dashboard-empty-row { padding: 30px 20px; color: var(--muted); text-align: center; white-space: normal; }
+.dashboard-signin { margin-top: 24px; }
 .calendar-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 17px 0 12px; font-size: 10px; color: #626e66; }
 .calendar-controls { display: flex; }
 .calendar-controls .icon-button { width: 25px; height: 25px; }
@@ -179,6 +186,7 @@ progress::-moz-progress-bar { background: var(--accent); }
 @media (max-width: 1000px) {
   .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
   .planning-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .progress-panel { display: block; }
   .checklist { border-top: 0; border-left: 1px solid var(--border); padding: 0 0 0 25px; }
   .calendar-caption { margin-bottom: 0; }
   .page-heading-row > .button { font-size: 11px; }
