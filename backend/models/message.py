@@ -9,12 +9,20 @@ class Message(db.Model):
     """Store one role-tagged message belonging to an AI conversation."""
 
     __tablename__ = 'messages'
+    __table_args__ = (
+        db.UniqueConstraint(
+            'conversation_id',
+            'request_id',
+            name='uq_messages_conversation_request_id',
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    request_id = db.Column(db.String(128), nullable=True)
 
     def __repr__(self):
         """Identify the message role and conversation in debugging output."""
