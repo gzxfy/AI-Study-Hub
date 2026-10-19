@@ -1,6 +1,6 @@
 # CHANGED: Fixed import - only import db from app, not from models
-from app import db
-from app.models.models import User, Note, Flashcard
+from backend import db
+from backend.models.models import User, Note, Flashcard
 
 
 def _create_test_user_with_flashcards(test_app, username="testuser", email="test@example.com"):

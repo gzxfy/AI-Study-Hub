@@ -1,8 +1,8 @@
 from datetime import datetime, date, timedelta
 
-from app import db
-from app.models.models import Flashcard, FlashcardProgress, Note, StudyEvent, User
-from app.services import progress_service, study_event
+from backend import db
+from backend.models.models import Flashcard, FlashcardProgress, Note, StudyEvent, User
+from backend.services import progress_service, study_event
 
 def _seed_user_note_flashcard(username, email):
     user = User(
@@ -132,3 +132,29 @@ def test_studied_today(test_app):
         stats = progress_service.get_user_progress(user_id=user.id)
 
         assert stats["cards_studied_today"] == 1
+
+
+def test_progress_api_returns_authenticated_json(client, test_app):
+    response = client.get("/api/progress")
+    assert response.status_code == 401
+    assert response.json["error"]["code"] == "unauthenticated"
+
+    with test_app.app_context():
+        user = User(
+            username="progress-api-user",
+            email="progress-api@example.com",
+            password_hash="hashed-password",
+        )
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+
+    with client.session_transaction() as session:
+        session["user_id"] = user_id
+
+    response = client.get("/api/progress")
+
+    assert response.status_code == 200
+    assert response.json["progress"]["total_reviewed"] == 0
+    assert response.json["progress"]["current_streak"] == 0
+    assert response.headers["Cache-Control"] == "no-store"

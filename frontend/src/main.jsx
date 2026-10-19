@@ -1,0 +1,18 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { AuthProvider } from './auth/AuthContext';
+import App from './App';
+import './styles/base.css';
+import './styles/layout.css';
+import './styles/notes.css';
+import './styles/topics.css';
+import './styles/assistant.css';
+import './styles/flashcards.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </React.StrictMode>,
+);

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env*
+!.env.example
+API_REQUESTS.md
+README.md
+FRONTEND.md

@@ -1,287 +1,527 @@
-from app.models.models import Flashcard
-from conftest import client
+import pytest
 
-def register_and_login(client, email='test@example.com', password='Password123!'):
-    client.post('/register', data={'email': email, 'password': password, 'confirm_password': password}, follow_redirects=True)
-    client.post('/login', data={'email': email, 'password': password}, follow_redirects=True)
+from backend import db
+from backend.models.models import (
+    Flashcard,
+    FlashcardProgress,
+    Note,
+    QuizAttempt,
+    QuizQuestionAttempt,
+    StudyEvent,
+    Topic,
+    User,
+)
+from sqlalchemy.exc import IntegrityError
 
-def create_flashcard(client, user_id=None, topic_id=None, note_id=None, question='', answer='', difficulty=None):
-    data = {
-        'user_id': user_id,
-        'topic_id': topic_id,
-        'note_id': note_id,
-        'question': question,
-        'answer': answer,
-        'difficulty': difficulty
+
+def create_user(test_app, username="learner", email="learner@example.com"):
+    with test_app.app_context():
+        user = User(
+            username=username,
+            email=email,
+            password_hash="not-used-by-these-tests",
+        )
+        db.session.add(user)
+        db.session.commit()
+        return user.id
+
+
+def sign_in(client, user_id):
+    with client.session_transaction() as session:
+        session["user_id"] = user_id
+
+
+def create_note(test_app, user_id, topic_id=None, title="Study note"):
+    with test_app.app_context():
+        note = Note(
+            user_id=user_id,
+            topic_id=topic_id,
+            title=title,
+            content="Notes used to review this topic.",
+        )
+        db.session.add(note)
+        db.session.commit()
+        return note.id
+
+
+def create_flashcard(
+    test_app,
+    user_id,
+    note_id,
+    topic_id=None,
+    question="What is normalization?",
+    answer="A way to organize relational data.",
+    difficulty="medium",
+):
+    with test_app.app_context():
+        flashcard = Flashcard(
+            user_id=user_id,
+            note_id=note_id,
+            topic_id=topic_id,
+            question=question,
+            answer=answer,
+            difficulty=difficulty,
+        )
+        db.session.add(flashcard)
+        db.session.commit()
+        return flashcard.id
+
+
+def flashcard_payload(note_id, **overrides):
+    payload = {
+        "note_id": note_id,
+        "question": "What is normalization?",
+        "answer": "A way to organize relational data.",
+        "difficulty": "medium",
     }
-    return client.post('/createFlashcard', data=data, follow_redirects=True)
+    payload.update(overrides)
+    return payload
 
-def create_note(client, user_id=None, topic_id=None, title='', content=''):
-    data = {
-        'user_id': user_id,
-        'topic_id': topic_id,
-        'title': title,
-        'content': content
+
+def test_flashcard_routes_require_a_valid_session(client, test_app):
+    responses = (
+        client.get("/api/flashcards"),
+        client.get("/api/flashcards/1"),
+        client.post("/api/flashcards", json=flashcard_payload(1)),
+        client.patch("/api/flashcards/1", json={"question": "Updated", "answer": "Answer"}),
+        client.delete("/api/flashcards/1"),
+    )
+
+    for response in responses:
+        assert response.status_code == 401
+        assert response.json["error"]["code"] == "unauthenticated"
+        assert response.headers["Cache-Control"] == "no-store"
+
+    sign_in(client, 999)
+    stale_session_response = client.get("/api/flashcards")
+    assert stale_session_response.status_code == 401
+    assert stale_session_response.json["error"]["code"] == "unauthenticated"
+
+
+@pytest.mark.parametrize("with_topic", [False, True])
+def test_create_flashcard_persists_data_and_returns_contract_shape(
+    client, test_app, with_topic
+):
+    user_id = create_user(test_app)
+    topic_id = None
+    if with_topic:
+        with test_app.app_context():
+            topic = Topic(user_id=user_id, title="Databases")
+            db.session.add(topic)
+            db.session.commit()
+            topic_id = topic.id
+    note_id = create_note(test_app, user_id, topic_id)
+    sign_in(client, user_id)
+
+    response = client.post(
+        "/api/flashcards",
+        json=flashcard_payload(
+            note_id,
+            topic_id=topic_id,
+            user_id=user_id + 1,
+        ),
+    )
+
+    assert response.status_code == 201
+    assert response.headers["Cache-Control"] == "no-store"
+    flashcard_data = response.json["flashcard"]
+    assert set(flashcard_data) == {
+        "id",
+        "note_id",
+        "topic_id",
+        "question",
+        "answer",
+        "difficulty",
+        "created_at",
+        "updated_at",
     }
-    return client.post('/createNote', data=data, follow_redirects=True)
+    assert flashcard_data["note_id"] == note_id
+    assert flashcard_data["topic_id"] == topic_id
+    assert flashcard_data["question"] == "What is normalization?"
+    assert flashcard_data["answer"] == "A way to organize relational data."
+    assert flashcard_data["difficulty"] == "medium"
+    assert flashcard_data["created_at"].endswith("Z")
+    assert flashcard_data["updated_at"].endswith("Z")
 
-def test_create_flashcard(client):
-    register_and_login(client)
-    with client.session_transaction() as session:  # Ensure the session is available for the flashcard creation
-        session['user_id'] = 1  # Set a dummy user_id for the session
-        session['username'] = 'testuser'  # Set a dummy username for the session
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question', answer='Sample Answer', difficulty='easy')
-    assert b'Flashcard created successfully!' in response.data
-
-    flashcard = Flashcard.query.filter_by(question='Sample Question').first()
-    assert flashcard is not None
-    assert flashcard.answer == 'Sample Answer'
-    assert flashcard.difficulty == 'easy'
-
-def test_create_flashcard_with_topic(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=1, title='Sample Note with Topic', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=1, note_id=1, question='Sample Question with Topic', answer='Sample Answer with Topic', difficulty='medium')
-    assert b'Flashcard created successfully!' in response.data
-
-    flashcard = Flashcard.query.filter_by(question='Sample Question with Topic').first()
-    assert flashcard is not None
-    assert flashcard.answer == 'Sample Answer with Topic'
-    assert flashcard.difficulty == 'medium'
-
-def test_create_flashcard_without_topic(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note without Topic', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question without Topic', answer='Sample Answer without Topic', difficulty='hard')
-    assert b'Flashcard created successfully!' in response.data
-
-    flashcard = Flashcard.query.filter_by(question='Sample Question without Topic').first()
-    assert flashcard is not None
-    assert flashcard.answer == 'Sample Answer without Topic'
-    assert flashcard.difficulty == 'hard'
-
-def test_create_flashcard_invalid_difficulty(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Invalid Difficulty', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Invalid Difficulty', answer='Sample Answer Invalid Difficulty', difficulty='invalid')
-    
-    assert b"Difficulty must be &#39;easy&#39;, &#39;medium&#39;, or &#39;hard&#39; if provided." in response.data  # Assuming the flashcard creation route validates difficulty and flashes this message
-
-def test_create_flashcard_missing_question(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Missing Question', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='', answer='Sample Answer Missing Question', difficulty='easy')
-    assert b'Question is required.' in response.data  # Assuming the flashcard creation route validates question and flashes this message
-
-def test_create_flashcard_missing_answer(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Missing Answer', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Missing Answer', answer='', difficulty='easy')
-    assert b'Answer is required.' in response.data  # Assuming the flashcard creation route validates answer and flashes this message
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_data["id"])
+        assert saved_flashcard is not None
+        assert saved_flashcard.user_id == user_id
+        assert saved_flashcard.note_id == note_id
+        assert saved_flashcard.topic_id == topic_id
 
 
-def test_create_flashcard_question_too_long(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+@pytest.mark.parametrize(
+    ("payload", "expected_code"),
+    [
+        ({"note_id": 1, "answer": "Answer"}, "invalid_fields"),
+        ({"note_id": 1, "question": "Question", "answer": 1}, "invalid_fields"),
+        ({"question": "Question", "answer": "Answer"}, "invalid_note"),
+        (flashcard_payload(None), "invalid_note"),
+        (flashcard_payload("1"), "invalid_note"),
+        (flashcard_payload(True), "invalid_note"),
+        (flashcard_payload(1, difficulty="impossible"), "validation_error"),
+        (flashcard_payload(1, question="   "), "validation_error"),
+        (flashcard_payload(1, answer="   "), "validation_error"),
+        (flashcard_payload(1, question="Q" * 501), "validation_error"),
+        (flashcard_payload(1, answer="A" * 2001), "validation_error"),
+    ],
+)
+def test_create_flashcard_rejects_invalid_payloads(
+    client, test_app, payload, expected_code
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    sign_in(client, user_id)
+    if type(payload.get("note_id")) is int and payload["note_id"] == 1:
+        payload = {**payload, "note_id": note_id}
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Question Too Long', content='Sample Content')
-    long_question = 'Q' * 501  # Assuming the question has a max length of 500 characters
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question=long_question, answer='Sample Answer Question Too Long', difficulty='easy')
-    assert b'Question cannot be longer than 500 characters.' in response.data  # Assuming the flashcard creation route validates question length and flashes this message
+    response = client.post("/api/flashcards", json=payload)
 
-def test_create_flashcard_answer_too_long(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Answer Too Long', content='Sample Content')
-    long_answer = 'A' * 2001  # Assuming the answer has a max length of 2000 characters
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Answer Too Long', answer=long_answer, difficulty='easy')
-    assert b'Answer cannot be longer than 2000 characters.' in response.data  # Assuming the flashcard creation route validates answer length and flashes this message
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == expected_code
+    assert response.headers["Cache-Control"] == "no-store"
+    with test_app.app_context():
+        assert Flashcard.query.count() == 0
 
 
-def test_view_flashcard_by_id(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+def test_create_flashcard_rejects_malformed_json(client, test_app):
+    user_id = create_user(test_app)
+    sign_in(client, user_id)
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note View Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question View Flashcard', answer='Sample Answer View Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.get(f'/flashcard/{flashcard_id}')
-    assert b'Sample Question View Flashcard' in response.data
-    assert b'Sample Answer View Flashcard' in response.data
+    response = client.post(
+        "/api/flashcards",
+        data='{"note_id":',
+        content_type="application/json",
+    )
 
-def test_view_all_flashcards(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "invalid_json"
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note View All Flashcards', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question View All Flashcards', answer='Sample Answer View All Flashcards', difficulty='easy')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Another Sample Question View All Flashcards', answer='Another Sample Answer View All Flashcards', difficulty='easy')
-    response = client.get('/flashcards')
-    assert b"All Flashcards" in response.data  # Assuming the view_all_flashcards.html displays "All Flashcards" as a heading
-    assert b'Sample Question View All Flashcards' in response.data
-    assert b'Another Sample Question View All Flashcards' in response.data
 
-def test_view_all_flashcards_no_flashcards(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+def test_create_flashcard_rejects_a_note_owned_by_another_user(client, test_app):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    other_note_id = create_note(test_app, other_user_id)
+    sign_in(client, user_id)
 
-    response = client.get('/flashcards')
-    assert b"All Flashcards" in response.data  # Assuming the view_all_flashcards.html displays "All Flashcards" as a heading
-    assert b'No flashcards available.' in response.data  # Assuming the view_all_flashcards.html displays this message when there are no flashcards
+    response = client.post(
+        "/api/flashcards",
+        json=flashcard_payload(other_note_id),
+    )
 
-def test_view_flashcard_not_found(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "validation_error"
+    with test_app.app_context():
+        assert Flashcard.query.count() == 0
 
-    flashcard_id = 999  # Assuming this ID does not exist
-    response = client.get(f'/flashcard/{flashcard_id}', follow_redirects=True)
-    assert b'Flashcard not found.' in response.data  # Assuming the view_flashcard route flashes this message when the flashcard is not found
-    assert response.status_code == 200  # Assuming the follow_redirects=True results in a 200 status code after redirection
 
-def test_edit_flashcard(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+@pytest.mark.parametrize("association", ["foreign_topic", "topic_mismatch", "missing_topic"])
+def test_create_flashcard_rejects_invalid_topic_associations(
+    client, test_app, association
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    with test_app.app_context():
+        owned_topic = Topic(user_id=user_id, title="Owned topic")
+        foreign_topic = Topic(user_id=other_user_id, title="Private topic")
+        db.session.add_all([owned_topic, foreign_topic])
+        db.session.commit()
+        owned_topic_id = owned_topic.id
+        foreign_topic_id = foreign_topic.id
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.post(f'/editFlashcard/{flashcard_id}', data={
-        'question': 'Updated Question Edit Flashcard',
-        'answer': 'Updated Answer Edit Flashcard',
-        'difficulty': 'medium'
-    }, follow_redirects=True)
-    assert b'Flashcard updated successfully!' in response.data  # Assuming the edit_flashcard route flashes this message upon successful update
-    # Optionally, you can also verify that the flashcard's details have been updated by fetching the flashcard and checking its content
-    response = client.get(f'/flashcard/{flashcard_id}')
-    assert b'Updated Question Edit Flashcard' in response.data
-    assert b'Updated Answer Edit Flashcard' in response.data
-    flashcard = Flashcard.query.get(flashcard_id)
-    assert flashcard.question == 'Updated Question Edit Flashcard'
-    assert flashcard.answer == 'Updated Answer Edit Flashcard'
-    assert flashcard.difficulty == 'medium'
+    note_topic_id = owned_topic_id if association == "missing_topic" else None
+    note_id = create_note(test_app, user_id, topic_id=note_topic_id)
+    request_topic_id = {
+        "foreign_topic": foreign_topic_id,
+        "topic_mismatch": owned_topic_id,
+        "missing_topic": None,
+    }[association]
+    sign_in(client, user_id)
 
-def test_edit_flashcard_not_found(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+    response = client.post(
+        "/api/flashcards",
+        json=flashcard_payload(note_id, topic_id=request_topic_id),
+    )
 
-    flashcard_id = 999  # Assuming this ID does not exist
-    response = client.post(f'/editFlashcard/{flashcard_id}', data={
-        'question': 'Updated Question Edit Flashcard',
-        'answer': 'Updated Answer Edit Flashcard',
-        'difficulty': 'medium'
-    }, follow_redirects=True)
-    assert b'Flashcard not found.' in response.data  # Assuming the edit_flashcard route flashes this message when the flashcard is not found
-    assert response.status_code == 200  # Assuming the follow_redirects=True results in a 200 status code after redirection
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "invalid_topic"
+    with test_app.app_context():
+        assert Flashcard.query.count() == 0
 
-def test_edit_only_question(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.post(f'/editFlashcard/{flashcard_id}', data={
-        'question': 'Updated Question Only Edit Flashcard',
-        'answer': 'Sample Answer Edit Flashcard',
-        'difficulty': 'easy'
-    }, follow_redirects=True)
-    assert b'Flashcard updated successfully!' in response.data
-    flashcard = Flashcard.query.get(flashcard_id)
-    assert flashcard.question == 'Updated Question Only Edit Flashcard'
-    assert flashcard.answer == 'Sample Answer Edit Flashcard'
-    assert flashcard.difficulty == 'easy'
 
-def test_edit_only_answer(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
-    
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.post(f'/editFlashcard/{flashcard_id}', data={
-        'question': 'Sample Question Edit Flashcard',
-        'answer': 'Updated Answer Only Edit Flashcard',
-        'difficulty': 'easy'
-    }, follow_redirects=True)
-    assert b'Flashcard updated successfully!' in response.data
-    flashcard = Flashcard.query.get(flashcard_id)
-    assert flashcard.question == 'Sample Question Edit Flashcard'
-    assert flashcard.answer == 'Updated Answer Only Edit Flashcard'
-    assert flashcard.difficulty == 'easy'
+def test_list_flashcards_returns_only_the_users_flashcards(client, test_app):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    own_note_id = create_note(test_app, user_id)
+    other_note_id = create_note(test_app, other_user_id)
+    first_id = create_flashcard(test_app, user_id, own_note_id, question="First")
+    second_id = create_flashcard(test_app, user_id, own_note_id, question="Second")
+    create_flashcard(test_app, other_user_id, other_note_id, question="Private")
+    sign_in(client, user_id)
 
-def test_edit_only_difficulty(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
+    response = client.get("/api/flashcards")
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.post(f'/editFlashcard/{flashcard_id}', data={
-        'question': 'Sample Question Edit Flashcard',
-        'answer': 'Sample Answer Edit Flashcard',
-        'difficulty': 'medium'
-    }, follow_redirects=True)
-    assert b'Flashcard updated successfully!' in response.data
-    flashcard = Flashcard.query.get(flashcard_id)
-    assert flashcard.question == 'Sample Question Edit Flashcard'
-    assert flashcard.answer == 'Sample Answer Edit Flashcard'
-    assert flashcard.difficulty == 'medium'
+    assert response.status_code == 200
+    assert response.headers["Cache-Control"] == "no-store"
+    assert {card["id"] for card in response.json["flashcards"]} == {
+        first_id,
+        second_id,
+    }
+    assert {card["question"] for card in response.json["flashcards"]} == {
+        "First",
+        "Second",
+    }
 
-def test_delete_flashcard(client):
-    register_and_login(client)
-    with client.session_transaction() as session:
-        session['user_id'] = 1
-        session['username'] = 'testuser'
 
-    response = create_note(client, user_id=1, topic_id=None, title='Sample Note Edit Flashcard', content='Sample Content')
-    response = create_flashcard(client, user_id=1, topic_id=None, note_id=1, question='Sample Question Edit Flashcard', answer='Sample Answer Edit Flashcard', difficulty='easy')
-    flashcard_id = 1  # Assuming this is the ID of the created flashcard
-    response = client.post(f'/deleteFlashcard/{flashcard_id}', follow_redirects=True)
-    assert b'Flashcard deleted successfully!' in response.data
-    flashcard = Flashcard.query.get(flashcard_id)
-    assert flashcard is None
+def test_get_flashcard_returns_owned_card_and_hides_other_users_cards(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    own_note_id = create_note(test_app, user_id)
+    other_note_id = create_note(test_app, other_user_id)
+    own_flashcard_id = create_flashcard(test_app, user_id, own_note_id)
+    other_flashcard_id = create_flashcard(test_app, other_user_id, other_note_id)
+    sign_in(client, user_id)
+
+    response = client.get(f"/api/flashcards/{own_flashcard_id}")
+    private_response = client.get(f"/api/flashcards/{other_flashcard_id}")
+    missing_response = client.get("/api/flashcards/999999")
+
+    assert response.status_code == 200
+    assert response.json["flashcard"]["id"] == own_flashcard_id
+    for hidden_response in (private_response, missing_response):
+        assert hidden_response.status_code == 404
+        assert hidden_response.json["error"]["code"] == "not_found"
+
+
+def test_update_flashcard_persists_question_answer_and_difficulty(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.patch(
+        f"/api/flashcards/{flashcard_id}",
+        json={
+            "question": "Updated question",
+            "answer": "Updated answer",
+            "difficulty": "hard",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json["flashcard"]["question"] == "Updated question"
+    assert response.json["flashcard"]["answer"] == "Updated answer"
+    assert response.json["flashcard"]["difficulty"] == "hard"
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_id)
+        assert saved_flashcard.question == "Updated question"
+        assert saved_flashcard.answer == "Updated answer"
+        assert saved_flashcard.difficulty == "hard"
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_question", "expected_answer", "expected_difficulty"),
+    [
+        ({"question": "Updated question"}, "Updated question", "A way to organize relational data.", "medium"),
+        ({"answer": "Updated answer"}, "What is normalization?", "Updated answer", "medium"),
+        ({"difficulty": None}, "What is normalization?", "A way to organize relational data.", None),
+        ({"difficulty": ""}, "What is normalization?", "A way to organize relational data.", None),
+    ],
+)
+def test_patch_flashcard_updates_only_supplied_fields(
+    client,
+    test_app,
+    payload,
+    expected_question,
+    expected_answer,
+    expected_difficulty,
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.patch(f"/api/flashcards/{flashcard_id}", json=payload)
+
+    assert response.status_code == 200
+    updated = response.json["flashcard"]
+    assert updated["question"] == expected_question
+    assert updated["answer"] == expected_answer
+    assert updated["difficulty"] == expected_difficulty
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_id)
+        assert saved_flashcard.question == expected_question
+        assert saved_flashcard.answer == expected_answer
+        assert saved_flashcard.difficulty == expected_difficulty
+
+
+def test_patch_flashcard_rejects_invalid_update_without_changing_saved_card(
+    client, test_app
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.patch(
+        f"/api/flashcards/{flashcard_id}",
+        json={"question": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json["error"]["code"] == "validation_error"
+    with test_app.app_context():
+        saved_flashcard = db.session.get(Flashcard, flashcard_id)
+        assert saved_flashcard.question == "What is normalization?"
+
+
+def test_patch_flashcard_returns_not_found_for_unavailable_card(client, test_app):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    other_note_id = create_note(test_app, other_user_id)
+    other_flashcard_id = create_flashcard(test_app, other_user_id, other_note_id)
+    sign_in(client, user_id)
+
+    responses = (
+        client.patch(
+            f"/api/flashcards/{other_flashcard_id}",
+            json={"question": "Try edit"},
+        ),
+        client.patch("/api/flashcards/999999", json={"question": "Missing"}),
+    )
+
+    for response in responses:
+        assert response.status_code == 404
+        assert response.json["error"]["code"] == "not_found"
+
+
+def test_delete_flashcard_removes_owned_card(client, test_app):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{flashcard_id}")
+
+    assert response.status_code == 204
+    assert response.data == b""
+    assert response.headers["Cache-Control"] == "no-store"
+    with test_app.app_context():
+        assert db.session.get(Flashcard, flashcard_id) is None
+
+
+def test_delete_flashcard_does_not_delete_another_users_card(client, test_app):
+    user_id = create_user(test_app)
+    other_user_id = create_user(
+        test_app, username="other", email="other@example.com"
+    )
+    other_note_id = create_note(test_app, other_user_id)
+    other_flashcard_id = create_flashcard(
+        test_app, other_user_id, other_note_id
+    )
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{other_flashcard_id}")
+
+    assert response.status_code == 404
+    assert response.json["error"]["code"] == "not_found"
+    with test_app.app_context():
+        assert db.session.get(Flashcard, other_flashcard_id) is not None
+
+
+@pytest.mark.parametrize(
+    "history_type",
+    ["progress", "study_event", "quiz_answer", "quiz_selection"],
+)
+def test_delete_flashcard_with_history_returns_conflict(
+    client, test_app, history_type
+):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    with test_app.app_context():
+        db.session.execute(db.text("PRAGMA foreign_keys=ON"))
+        assert db.session.execute(db.text("PRAGMA foreign_keys")).scalar() == 1
+
+        if history_type == "progress":
+            db.session.add(FlashcardProgress(
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                times_seen=1,
+                times_correct=1,
+            ))
+        elif history_type == "study_event":
+            db.session.add(StudyEvent(
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                is_correct=True,
+                source="study_mode",
+            ))
+        else:
+            attempt = QuizAttempt(
+                user_id=user_id,
+                note_id=note_id,
+                question_order=[flashcard_id],
+            )
+            db.session.add(attempt)
+            if history_type == "quiz_answer":
+                db.session.flush()
+                db.session.add(QuizQuestionAttempt(
+                    quiz_attempt_id=attempt.id,
+                    flashcard_id=flashcard_id,
+                    user_answer="A way to organize relational data.",
+                    correct_answer="A way to organize relational data.",
+                    is_correct=True,
+                    time_taken=1.0,
+                ))
+        db.session.commit()
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{flashcard_id}")
+
+    assert response.status_code == 409
+    assert response.json["error"]["code"] == "flashcard_in_use"
+    with test_app.app_context():
+        assert db.session.get(Flashcard, flashcard_id) is not None
+
+
+def test_sqlite_foreign_key_rejects_referenced_flashcard_delete(client, test_app):
+    user_id = create_user(test_app)
+    note_id = create_note(test_app, user_id)
+    flashcard_id = create_flashcard(test_app, user_id, note_id)
+    with test_app.app_context():
+        db.session.execute(db.text("PRAGMA foreign_keys=ON"))
+        db.session.add(StudyEvent(
+            user_id=user_id,
+            flashcard_id=flashcard_id,
+            is_correct=True,
+            source="test",
+        ))
+        db.session.commit()
+        with pytest.raises(IntegrityError):
+            db.session.execute(
+                db.text("DELETE FROM flashcards WHERE id = :flashcard_id"),
+                {"flashcard_id": flashcard_id},
+            )
+            db.session.commit()
+        db.session.rollback()
+    sign_in(client, user_id)
+
+    response = client.delete(f"/api/flashcards/{flashcard_id}")
+
+    assert response.status_code == 409
