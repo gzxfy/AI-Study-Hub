@@ -86,49 +86,93 @@ DATABASE_URL=mysql+pymysql://username:password@localhost:3306/studyhub
 OPENAI_API_KEY=your-openai-api-key
 ```
 
-Create the database first and replace the example credentials. Keep real credentials out of source control. Use a stable `SECRET_KEY` and a persistent `DATABASE_URL`; the fallback in-memory database does not preserve data between runs. The AI Assistant requires a working OpenAI configuration.
+Create an empty MySQL database first and replace the example credentials. For a clean installation, use a separate database such as `studyhub_clean_test`; do not point the test checkout at your normal database. Keep real credentials out of source control. Use a stable `SECRET_KEY` and a persistent `DATABASE_URL`; the fallback in-memory database does not preserve data between runs. The AI Assistant requires a working OpenAI configuration.
 
-Apply migrations and start Flask:
+For a quick local setup without installing MySQL, use this database setting instead:
+
+```dotenv
+DATABASE_URL=sqlite:///studyhub.db
+```
+
+Flask stores that SQLite file in its `instance/` directory. Do not copy an existing database into a fresh-install test.
+
+From the repository root, with the virtual environment active, apply the committed migrations. On PowerShell:
+
+```powershell
+python -m flask --app run.py db upgrade
+if ($LASTEXITCODE -ne 0) { throw "Database migration failed. Fix it before starting Flask." }
+python -m flask --app run.py db current
+```
+
+On macOS/Linux, run `python -m flask --app run.py db upgrade`, check that it succeeds, then run `python -m flask --app run.py db current`.
+
+The current migration head is `d8a17c09e452`. The configured migration directory is `alembic/`; all of its setup files and revisions must be included in the clone. Do not run `db init`, `db stamp head`, or `db.create_all()` to bypass a failed upgrade. See [migration notes](alembic/README).
+
+**Only after the upgrade succeeds**, start Flask in this terminal:
 
 ```bash
-flask --app run.py db upgrade
 python run.py
 ```
 
-Flask runs at `http://127.0.0.1:5000`. The application config selects the migration directory `alembic/`. Fresh-database migration setup remains a release check; the automated tests create an isolated schema directly and do not prove migration readiness. SQLite migrations are not currently verified as a supported local setup.
+Flask runs at `http://127.0.0.1:5000`. Keep this terminal running. Starting Flask alone does not create or migrate the database. Automated migration tests exercise a fresh SQLite database and upgrades with saved rows; a live MySQL migration remains an environment-specific verification step.
 
 ### 3. Start React
 
-In a second terminal:
+Open a **second terminal** in the repository root and install frontend dependencies:
 
 ```bash
 cd frontend
 npm ci
+```
+
+Then start the development server from `frontend/`:
+
+```bash
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173/app**. Keep Flask running: Vite forwards `/api` and `/study_mode` requests to the backend.
+Open **http://127.0.0.1:5173/app**. Keep both terminals running: Flask serves the backend and Vite forwards `/api` and `/study_mode` requests to it. Use a private browser window and register a new account when testing a clean installation.
 
-Build the frontend with:
+### Optional: check the production build
+
+`npm run dev` stays running until you stop it with Ctrl+C. You do not need to run a build to use the development app. To verify that production assets compile, open a **third terminal at the repository root** and run:
 
 ```bash
-npm run build
+npm --prefix frontend run build
 ```
 
-A production host must serve the compiled frontend, handle React route refreshes, and forward backend requests. Vite's development proxy does not configure production hosting.
+This creates `frontend/dist/` and exits. It does not launch either server. A production host must serve the compiled frontend, handle React route refreshes, and forward backend requests. Vite's development proxy does not configure production hosting.
+
+### Reuse a clean-test checkout
+
+A second clone is a separate working copy. Fix and commit code in your main project, push the commit, then pull it into the test checkout. If you created `AI-Study-Hub-clean-test` inside the main project, run these commands **from that test folder**, after stopping its servers:
+
+```powershell
+git status --short
+git pull --ff-only
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m flask --app run.py db upgrade
+if ($LASTEXITCODE -ne 0) { throw "Database migration failed. Fix it before starting Flask." }
+python run.py
+```
+
+Check `git status` for local edits before pulling. In the test checkout's second terminal, run `npm ci` from `frontend/` and then `npm run dev`. Keep its own `.env`, virtual environment, and separate database local. The first failed upgrade can be retried after pulling the fix; if it created partial tables, use a new empty test database rather than deleting your main database.
+
+For future clean-install checks, create the clone **beside** the original project instead of inside it. The test checkout does not belong in the original project's commit. You can keep it for future tests, or remove it later after stopping its servers and checking that it contains no work you need.
 
 ## Tests
 
 Run the backend suite from the repository root with the Python virtual environment active:
 
 ```bash
-pytest
+python -m pytest
 ```
 
-Latest reported backend result:
+Latest verified backend result, including the four migration regression tests:
 
 ```text
-165 passed, 1 skipped, 715 warnings in 8.98s
+169 passed, 1 skipped, 731 warnings in 10.42s
 ```
 
 This result does not mean the application has zero warnings or that every deployment workflow has been tested. Review the skipped test and warnings when preparing a release.
@@ -140,7 +184,7 @@ npm --prefix frontend test
 npm --prefix frontend run build
 ```
 
-Frontend assistant tests cover conversation response validation, request IDs for retries, message formatting, session credentials, CSRF, cancellation, and request failures.
+Frontend assistant tests cover conversation response validation, request IDs for retries, message formatting, session credentials, CSRF, cancellation, and request failures. Backend migration tests build the schema through Alembic instead of `db.create_all()`, verify model columns, exercise the signed-in study flow, and check that upgrades preserve existing data. Pytest is configured to discover `test/`, so a nested test checkout is not accidentally collected as a second test suite.
 
 ## Project layout
 
@@ -172,7 +216,7 @@ run.py          Flask entry point
 ## Next steps
 - Change the database to PostgreSQL
 - Update the backend to Django
-- Verify a reproducible fresh-database installation and production deployment.
+- Verify migration upgrades against the deployment MySQL database and complete production hosting setup.
 - Expand browser testing across the main workflows and mobile layouts.
 - Improve AI availability errors, usage limits, and handling of concurrent requests.
 - Continue backend cleanup after verifying the connected frontend workflows.

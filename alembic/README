@@ -1,0 +1,45 @@
+AI Study Hub database migrations
+================================
+
+Run from the repository root with the project virtual environment active:
+
+    python -m flask --app run.py db upgrade
+    python -m flask --app run.py db current
+
+The configured directory is alembic/. env.py is Alembic's migration runner,
+not the secret .env file. alembic.ini contains logging settings only; Flask
+supplies the configured database connection.
+
+The full upgrade chain is:
+
+    caa005233e4d  initial users, topics, notes, conversations, messages, progress
+    8e7b3d2a1c44  PDF filename and study-plan tables
+    0a6f912e7b30  flashcards (required before flashcard_progress)
+    1f4296c2362e  flashcard_progress
+    b4e3c8f2a921  study events, quiz history, floating-point review progress
+    c912d45b810e  assistant message request IDs
+    d8a17c09e452  study-plan completed flag used by the existing model
+
+The first two revisions were recovered from the old migrations/ directory.
+The prerequisite of 1f4296c2362e was repaired so an empty database can be
+created in foreign-key order. Existing revision IDs were retained. Databases
+already at 1f4296c2362e or later do not rerun the recovered prerequisites;
+those existing databases must already contain their core tables. The final
+revision accepts the completed column if a model-created database has it.
+
+Do not regenerate or stamp migration history to fix setup errors. Check
+the database's current revision and schema first. Existing databases with
+tables but no Alembic revision need a separate reconciliation and backup;
+this clean-install repair does not automatically adopt arbitrary schemas.
+
+SQLite upgrades are regression-tested, including row preservation during
+the Integer-to-Float batch alteration. Test MySQL against a disposable
+database before applying the upgrade to valuable data. Downgrades through
+study-history revisions are intentionally blocked to protect saved history.
+
+Include every setup file and revision in Git. Current repository ignore
+rules hide some migration files, so explicitly include them when committing:
+
+    git add -f -- alembic/README alembic/env.py alembic/alembic.ini alembic/script.py.mako alembic/versions/*.py
+
+Never add the secret .env file or database files with this command.
