@@ -13,4 +13,3 @@ alembic/*
 !alembic/versions/
 alembic/versions/*
 !alembic/versions/c912d45b810e_add_assistant_message_request_ids.py
-docs/

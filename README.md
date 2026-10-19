@@ -1,62 +1,66 @@
 # AI Study Hub
 
-> A study workspace for organizing course material, practicing with flashcards and quizzes, and getting help from an AI tutor.
+**[▶ Watch the project demo · 2 min 35 sec](docs/studyhub-demo.mp4)**
 
-<!-- TODO: Replace this introduction with project summary and add project/demo links. -->
+[![Watch the AI Study Hub demo: notes, flashcards, study sessions, and the AI Assistant](docs/studyhub-demo-preview.jpg)](docs/studyhub-demo.mp4)
+
+*Click the preview or the link above to open the demo video.*
+
+A study workspace for organizing course notes, practicing recall with flashcards, and working through difficult concepts with an AI tutor.
 
 ## About
 
-AI Study Hub is a learning app built around a student's notes and topics. The Flask application provides account-based study tools, including notes, PDF text import, flashcards, study sessions, quizzes, progress tracking, and study plans. An optional OpenAI integration can answer questions using note content as context.
+AI Study Hub is a full-stack Computer Science portfolio project built with React and Flask. It brings study material and revision tools into one workspace: organize notes by topic, create flashcards, review them in study sessions, and ask questions using saved notes as AI context.
 
-The repository currently has two user interfaces:
-
-- The Flask/Jinja pages are the existing server-rendered application.
-- The React/Vite app is an early layout preview at `/app`. It currently has navigation and placeholder feature pages, but does not authenticate users or call the Flask backend yet.
-
-This distinction is intentional: the React screens should not be mistaken for live data or completed workflows. The existing Flask pages and JSON study endpoints are separate from that preview while frontend integration is in progress.
-
-## Screenshots
-
-<!-- TODO: Add screenshots to docs/screenshots/ and update these paths and captions. -->
-
-<!-- | Screen | Preview |
-| --- | --- |
-| Home | `docs/screenshots/home.png` (add screenshot) |
-| Notes and topics | `docs/screenshots/notes.png` (add screenshot) |
-| Study or quiz flow | `docs/screenshots/study-session.png` (add screenshot) |
-| React app preview | `docs/screenshots/react-preview.png` (add screenshot) |
-
-To show an image here, replace a placeholder with Markdown such as `![Home page](docs/screenshots/home.png)` after adding the image file. -->
+The React frontend communicates with the existing Flask backend through HTTP endpoints. Flask handles authentication, ownership checks, database operations, and OpenAI requests. Notes and AI conversations are stored so students can return to their work later.
 
 ## Features
 
-- Register and sign in with a user account.
-- Create and organize topics, notes, and flashcards.
-- Import text from PDF files into notes. (Will probably update it to use blob)
-- Review flashcards and track study activity and progress.
-- Take quizzes and review answers.
-- Generate and track a study plan.
-- Search notes and topics.
-- Ask an AI tutor questions based on study-note context when `OPENAI_API_KEY` is configured.
-- Preview the React application shell and its responsive navigation at `/app`.
+- **Accounts:** Register, sign in, and sign out using Flask session authentication and CSRF-protected requests.
+- **Dashboard:** View saved material counts, recent notes, and recorded flashcard study progress.
+- **Notes:** Create, read, edit, delete, and search notes by title or topic.
+- **Topics:** Organize notes into subjects and manage topic names, descriptions, and colors.
+- **Flashcards:** Create and edit question-and-answer cards, search the library, and filter cards by note, topic, or difficulty.
+- **Study sessions:** Reveal answers, mark cards as correct or needing practice, and view a session summary.
+- **AI Assistant:** Open a note's saved conversation, preview its content, ask follow-up questions, and optionally include related topic notes. Starter prompts help with summaries, explanations, and practice questions.
+- **Responsive interface:** Shared navigation, keyboard shortcuts in the assistant, and visible loading, empty, and error states.
 
-Availability and completeness vary by interface. The Flask app contains the existing workflows; the React preview is not connected to them yet.
+The backend also contains quiz, study-plan, and PDF-extraction services. These are separate from the current React workflows; the demo and feature list above describe the connected frontend.
 
 ## Technology
 
-- **Backend:** Python, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-Login, Flask-WTF  (Will most likely get changed to FastAPI)
-- **Database:** SQLAlchemy-supported database; SQLite is convenient for local development
-- **AI and documents:** OpenAI Python SDK (optional), pypdf
-- **Frontend preview:** React, React Router, Vite
-- **Tests:** pytest
+| Layer | Tools |
+| --- | --- |
+| Frontend | React, React Router, Vite, CSS |
+| Backend | Python, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-WTF |
+| Database | SQLAlchemy models; MySQL through PyMySQL, SQLite for isolated tests |
+| AI | OpenAI Python SDK, called from Flask |
+| Tests | Pytest and Node.js test runner |
 
-## Run Locally
+## Architecture
 
-### Flask application
+```mermaid
+flowchart TD
+    React[React frontend] -->|HTTP requests and session cookies| Routes[Flask routes]
+    Routes --> Services[Application services]
+    Services --> Models[SQLAlchemy models]
+    Models --> Database[(Database)]
+    Services -->|Note context and conversation history| OpenAI[OpenAI API]
+```
 
-Requirements: Python and pip. From the repository root, create and activate a virtual environment, then install dependencies.
+- Users own topics, notes, flashcards, and study records. The API checks ownership before accessing private material.
+- Notes can belong to a topic, and flashcards are linked to notes.
+- Conversations group saved user and assistant messages for a note.
+- React calls Flask to ask AI questions. The OpenAI key stays on the server.
+- A shared frontend API client sends session cookies and obtains a fresh CSRF token before mutations.
 
-Windows PowerShell:
+## Run locally
+
+### 1. Install backend dependencies
+
+Requirements: Python, a database, and Node.js 22.12+ for the frontend.
+
+From the repository root, on Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -64,7 +68,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-macOS/Linux:
+On macOS/Linux:
 
 ```bash
 python3 -m venv .venv
@@ -72,118 +76,105 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Create a `.env` file in the repository root before running migrations:
+### 2. Configure Flask
+
+Create a `.env` file in the repository root with your local values:
 
 ```dotenv
-SECRET_KEY=replace-this-with-a-long-random-value
-DATABASE_URL=sqlite:///studyhub.db
-# Optional: enables live OpenAI tutor responses
-OPENAI_API_KEY=
+SECRET_KEY=replace-with-a-long-random-secret
+DATABASE_URL=mysql+pymysql://username:password@localhost:3306/studyhub
+OPENAI_API_KEY=your-openai-api-key
 ```
 
-`SECRET_KEY` should remain stable between runs so sessions remain valid. `OPENAI_API_KEY` is optional; without it, live AI responses are unavailable (some quiz-review paths provide a built-in fallback). Keep real secrets out of source control.
+Create the database first and replace the example credentials. Keep real credentials out of source control. Use a stable `SECRET_KEY` and a persistent `DATABASE_URL`; the fallback in-memory database does not preserve data between runs. The AI Assistant requires a working OpenAI configuration.
 
-Apply the database migrations, then start Flask:
+Apply migrations and start Flask:
 
 ```bash
 flask --app run.py db upgrade
 python run.py
 ```
 
-Open <http://127.0.0.1:5000/>. The configured database must be persistent: the application's fallback database is in-memory and is intended for tests, not normal local use. If you use another database, set its SQLAlchemy URL in `DATABASE_URL` and make sure its driver and service are available.
+Flask runs at `http://127.0.0.1:5000`. The application config selects the migration directory `alembic/`. Fresh-database migration setup remains a release check; the automated tests create an isolated schema directly and do not prove migration readiness. SQLite migrations are not currently verified as a supported local setup.
 
-### React preview
+### 3. Start React
 
 In a second terminal:
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173/app>. Node.js 22.12 or newer is required by the current Vite version. The preview can run without Flask, but its feature pages are not connected to backend data. The Vite development server proxies `/api` requests to Flask. Authentication and the notes contract (`GET /api/notes`, `GET /api/topics`, `POST /api/notes`, and `GET /api/notes/<id>`) are implemented; other feature pages remain placeholders. See `frontend/FRONTEND.md` for the notes API contract.
+Open **http://127.0.0.1:5173/app**. Keep Flask running: Vite forwards `/api` and `/study_mode` requests to the backend.
 
-To build or locally serve the compiled preview:
+Build the frontend with:
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## Architecture
-
-<!-- ```mermaid
-flowchart TD
-		Browser[Browser]
-		FlaskUI[Flask routes and Jinja templates]
-		ReactUI[React and Vite preview at /app]
-		Services[Flask services]
-		Models[SQLAlchemy models]
-		Database[(Configured database)]
-		OpenAI[OpenAI API optional]
-		PDF[pypdf]
-
-		Browser --> FlaskUI
-		FlaskUI --> Services
-		Services --> Models
-		Models --> Database
-		Services -. tutor requests .-> OpenAI
-		FlaskUI -. PDF note import .-> PDF
-		Browser --> ReactUI
-		ReactUI -. API integration is future work .-> FlaskUI
-``` -->
-
-<!-- The Flask app is created by `app.create_app()` and launched by `run.py`. Routes handle HTTP requests and render templates or return JSON; services hold study and AI operations; SQLAlchemy models represent persisted users and study data. Flask-Migrate applies schema changes from `migrations/`.
-
-The React app is a separate Vite frontend. `frontend/src/App.jsx` maps routes, `frontend/src/layouts/` and `frontend/src/components/` provide the shared shell, and `frontend/src/pages/` contains the current screens. `frontend/vite.config.js` reserves a development proxy for `/api`, but backend API integration and shared authentication are future work. See [frontend/README.md](frontend/README.md) and [frontend/API_REQUESTS.md](frontend/API_REQUESTS.md) for its current scope and proposed API contract. -->
-
-## Project Layout
-
-```text
-backend/
-	models/       Database models
-	routes/       Flask page and JSON routes
-	services/     Study, AI, document, and progress logic
-	utils/        Shared validation helpers
-frontend/
-	src/          React app shell, pages, components, and styles
-migrations/     Flask-Migrate migration scripts
-templates/      Flask/Jinja HTML pages
-static/         CSS and JavaScript for Flask pages
-test/           pytest test suite
-run.py          Flask application entry point
-```
+A production host must serve the compiled frontend, handle React route refreshes, and forward backend requests. Vite's development proxy does not configure production hosting.
 
 ## Tests
 
-With the Python virtual environment active, run the backend tests from the repository root:
+Run the backend suite from the repository root with the Python virtual environment active:
 
 ```bash
 pytest
 ```
 
-## Configuration
+Latest reported backend result:
 
-| Variable | Purpose | Required |
-| --- | --- | --- |
-| `SECRET_KEY` | Signs Flask session data; configure a stable secret outside source control. | Recommended |
-| `DATABASE_URL` | SQLAlchemy connection URL. Defaults to an in-memory SQLite database. | For persistent local use |
-| `OPENAI_API_KEY` | Enables live OpenAI tutor responses. | No |
+```text
+165 passed, 1 skipped, 715 warnings in 8.98s
+```
 
-## Roadmap / Notes
+This result does not mean the application has zero warnings or that every deployment workflow has been tested. Review the skipped test and warnings when preparing a release.
 
-<!-- - Connect the React preview to the Flask application and implement shared authentication.
-- Replace this short list with project-specific plans, known limitations, or contribution guidance. -->
-<!-- 
-## Contributing
+Run the frontend tests and production build from the repository root:
 
-<!-- TODO: Add your preferred workflow for issues, branches, pull requests, and code style. -->
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+```
 
-Contributions are welcome. Please open an issue to discuss larger changes before submitting a pull request. -->
+Frontend assistant tests cover conversation response validation, request IDs for retries, message formatting, session credentials, CSRF, cancellation, and request failures.
 
-<!-- ## License
+## Project layout
 
-<!-- TODO: Add a LICENSE file and state the project license here. -->
+```text
+backend/
+  models/       SQLAlchemy entities and relationships
+  routes/       Flask HTTP endpoints
+  services/     Application and AI logic
+  utils/        Shared validation
+frontend/
+  src/
+    api/        Requests to Flask
+    assistant/  Conversation UI and response formatting
+    auth/       Session state and protected routes
+    components/ Shared UI components
+    hooks/      Data loading helpers
+    layouts/    Shared page layouts
+    pages/      Application screens
+    styles/     CSS
+  tests/        Frontend tests
+alembic/        Currently configured migration directory
+docs/           Demo video and preview image
+test/           Backend tests
+templates/      Legacy Jinja templates
+static/         Legacy Flask assets
+run.py          Flask entry point
+```
 
-No license has been specified yet. -->
+## Next steps
+- Change the database to PostgreSQL
+- Update the backend to Django
+- Verify a reproducible fresh-database installation and production deployment.
+- Expand browser testing across the main workflows and mobile layouts.
+- Improve AI availability errors, usage limits, and handling of concurrent requests.
+- Continue backend cleanup after verifying the connected frontend workflows.
+
+
