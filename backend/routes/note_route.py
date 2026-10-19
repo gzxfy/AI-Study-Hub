@@ -150,6 +150,57 @@ def api_create_note():
     return api_json({"note": serialize_note(note)}, 201)
 
 
+@note_bp.post("/api/notes/upload")
+def api_upload_note():
+    """Create a note from an uploaded PDF using multipart form data."""
+    user_id, error_response = api_user_id()
+    if error_response:
+        return error_response
+
+    if request.mimetype != "multipart/form-data":
+        return api_error(
+            "invalid_content_type",
+            "Expected multipart form data with a PDF file.",
+            400,
+        )
+
+    title = request.form.get("title")
+    content = request.form.get("content", "")
+    if title is None:
+        return api_error("invalid_fields", "title is required.", 400)
+
+    raw_topic_id = request.form.get("topic_id")
+    topic_id = None
+    if raw_topic_id:
+        try:
+            topic_id = int(raw_topic_id)
+        except ValueError:
+            return api_error("invalid_topic", "topic_id must be a positive integer or empty.", 400)
+        if topic_id <= 0 or str(topic_id) != raw_topic_id.strip():
+            return api_error("invalid_topic", "topic_id must be a positive integer or empty.", 400)
+
+    uploaded_pdf = request.files.get("note_pdf")
+    if uploaded_pdf is None or not uploaded_pdf.filename:
+        return api_error("invalid_file", "A PDF file is required.", 400)
+
+    try:
+        note = note_service.create_note(
+            user_id=user_id,
+            title=title,
+            content=content,
+            topic_id=topic_id,
+            uploaded_pdf_path=uploaded_pdf,
+        )
+    except note_service.InvalidTopicError:
+        return api_error("invalid_topic", "Topic is invalid or unavailable.", 400)
+    except ValueError as error:
+        return api_error("validation_error", str(error), 400)
+    except Exception:
+        return internal_error("Unable to save uploaded note.")
+
+    return api_json({"note": serialize_note(note)}, 201)
+
+
 @note_bp.get("/api/notes/<int:note_id>")
 def api_view_note(note_id):
     user_id, error_response = api_user_id()

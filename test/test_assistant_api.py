@@ -40,7 +40,13 @@ def test_get_conversation_returns_json_messages(client, test_app):
 
 def test_send_message_returns_and_persists_exchange(client, test_app, monkeypatch):
     note_id = create_signed_in_note(client, test_app)
-    monkeypatch.setattr(assistant_service, "ask_ai", lambda question, content, history: "Tutor reply")
+    calls = []
+
+    def fake_ask_ai(question, content, history):
+        calls.append((question, content, history))
+        return "Tutor reply"
+
+    monkeypatch.setattr(assistant_service, "ask_ai", fake_ask_ai)
 
     response = client.post(
         f"/api/notes/{note_id}/messages",
@@ -53,9 +59,49 @@ def test_send_message_returns_and_persists_exchange(client, test_app, monkeypatc
         "Explain this note.",
         "Tutor reply",
     ]
+    assert calls[0][0:2] == (
+        "Explain this note.",
+        "The note content is available to the tutor.",
+    )
+    assert calls[0][2] == []
     with test_app.app_context():
-        user_message = Message.query.filter_by(role="user").one()
+        persisted_messages = Message.query.order_by(Message.id.asc()).all()
+        user_message, assistant_message = persisted_messages
+        assert user_message.content == "Explain this note."
+        assert assistant_message.role == "assistant"
+        assert assistant_message.content == "Tutor reply"
         assert user_message.request_id == "attempt-1"
+
+
+def test_send_message_passes_prior_exchange_to_ai(client, test_app, monkeypatch):
+    note_id = create_signed_in_note(client, test_app)
+    histories = []
+
+    def fake_ask_ai(question, content, history):
+        histories.append(list(history))
+        return f"Reply to: {question}"
+
+    monkeypatch.setattr(assistant_service, "ask_ai", fake_ask_ai)
+    client.post(
+        f"/api/notes/{note_id}/messages",
+        json={"message": "First question", "request_id": "first"},
+    )
+    response = client.post(
+        f"/api/notes/{note_id}/messages",
+        json={"message": "Follow-up question", "request_id": "second"},
+    )
+
+    assert response.status_code == 200
+    assert [message["content"] for message in response.json["messages"]] == [
+        "First question",
+        "Reply to: First question",
+        "Follow-up question",
+        "Reply to: Follow-up question",
+    ]
+    assert [message.content for message in histories[1]] == [
+        "First question",
+        "Reply to: First question",
+    ]
 
 
 def test_retrying_request_id_does_not_call_ai_twice(client, test_app, monkeypatch):
@@ -94,6 +140,14 @@ def test_include_topic_uses_notes_from_the_owned_topic(client, test_app, monkeyp
         )
         db.session.add(topic)
         db.session.flush()
+        other_topic = Topic(
+            user_id=user.id,
+            title="History",
+            description="",
+            color="#168A72",
+        )
+        db.session.add(other_topic)
+        db.session.flush()
         note = Note(
             user_id=user.id,
             topic_id=topic.id,
@@ -106,7 +160,26 @@ def test_include_topic_uses_notes_from_the_owned_topic(client, test_app, monkeyp
             title="DNA note",
             content="DNA stores genetic information.",
         )
-        db.session.add_all([note, related_note])
+        unrelated_note = Note(
+            user_id=user.id,
+            topic_id=other_topic.id,
+            title="History note",
+            content="This note belongs to another topic.",
+        )
+        other_user = User(
+            username="other-topic-assistant-user",
+            email="other-topic-assistant@example.com",
+            password_hash="not-a-real-password-hash",
+        )
+        db.session.add(other_user)
+        db.session.flush()
+        other_users_note = Note(
+            user_id=other_user.id,
+            topic_id=topic.id,
+            title="Private note",
+            content="This note belongs to another user.",
+        )
+        db.session.add_all([note, related_note, unrelated_note, other_users_note])
         db.session.commit()
         note_id = note.id
         user_id = user.id
@@ -131,6 +204,8 @@ def test_include_topic_uses_notes_from_the_owned_topic(client, test_app, monkeyp
         "Cells have membranes.",
         "DNA stores genetic information.",
     }
+    assert "This note belongs to another topic." not in received_context
+    assert "This note belongs to another user." not in received_context
 
 
 def test_message_validation_and_note_ownership(client, test_app):

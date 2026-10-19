@@ -99,10 +99,12 @@ def delete_note(note_id, user_id):
         raise NoteNotFoundError("Note not found!")
     if note.user_id != user_id:
         raise NoteNotFoundError("You do not have permission to delete this note!")
-    flashcard_ids = db.session.query(Flashcard.id).filter_by(note_id=note.id)
-    quiz_attempt_ids = db.session.query(QuizAttempt.id).filter_by(note_id=note.id)
-    conversation_ids = db.session.query(Conversation.id).filter_by(note_id=note.id)
+    # Collect IDs of related entities for deletion to maintain referential integrity.
+    flashcard_ids = [row[0] for row in db.session.query(Flashcard.id).filter_by(note_id=note.id).all()]
+    quiz_attempt_ids = [row[0] for row in db.session.query(QuizAttempt.id).filter_by(note_id=note.id).all()]
+    conversation_ids = [row[0] for row in db.session.query(Conversation.id).filter_by(note_id=note.id).all()]
 
+    # These deletions ensure referential integrity by removing dependent records before deleting the note itself.
     db.session.query(Message).filter(
         Message.conversation_id.in_(conversation_ids)
     ).delete(synchronize_session=False)
@@ -110,13 +112,21 @@ def delete_note(note_id, user_id):
         Conversation.id.in_(conversation_ids)
     ).delete(synchronize_session=False)
 
-    db.session.query(QuizQuestionAttempt).filter(
-        (QuizQuestionAttempt.quiz_attempt_id.in_(quiz_attempt_ids))
-        | (QuizQuestionAttempt.flashcard_id.in_(flashcard_ids))
+    if quiz_attempt_ids:
+        db.session.query(QuizQuestionAttempt).filter(
+        QuizQuestionAttempt.quiz_attempt_id.in_(quiz_attempt_ids)
     ).delete(synchronize_session=False)
-    db.session.query(QuizAttempt).filter(
-        QuizAttempt.id.in_(quiz_attempt_ids)
-    ).delete(synchronize_session=False)
+
+    if flashcard_ids:
+        # Delete quiz question attempts related to these flashcards
+        db.session.query(QuizQuestionAttempt).filter(
+            QuizQuestionAttempt.flashcard_id.in_(flashcard_ids)
+        ).delete(synchronize_session=False)
+
+    if quiz_attempt_ids:
+        db.session.query(QuizAttempt).filter(
+            QuizAttempt.id.in_(quiz_attempt_ids)
+        ).delete(synchronize_session=False)
 
     db.session.query(StudyEvent).filter(
         StudyEvent.flashcard_id.in_(flashcard_ids)
