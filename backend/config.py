@@ -3,7 +3,10 @@ import secrets
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# The explicit local launcher uses its own SQLite database and secret. It must
+# not inherit a .env copied from another checkout (or a placeholder MySQL URL).
+if os.environ.get('STUDYHUB_LOCAL') != '1':
+    load_dotenv()
 
 class Config:
     # Use env-provided key in deployed environments; generate a strong ephemeral key for local dev.
