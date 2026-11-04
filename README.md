@@ -1,10 +1,8 @@
 # AI Study Hub
 
-**[▶ Watch the project demo · 2 min 35 sec](docs/studyhub-demo.mp4)**
+**[▶ Watch the project demo · 2 min 35 sec](https://github.com/user-attachments/assets/f7800144-08f3-44a6-a624-629285370982)**
 
-[![Watch the AI Study Hub demo: notes, flashcards, study sessions, and the AI Assistant](docs/studyhub-demo-preview.jpg)](docs/studyhub-demo.mp4)
-
-*Click the preview or the link above to open the demo video.*
+[![Watch the AI Study Hub demo](docs/studyhub-demo-preview.jpg)](https://github.com/user-attachments/assets/f7800144-08f3-44a6-a624-629285370982)
 
 A study workspace for organizing course notes, practicing recall with flashcards, and working through difficult concepts with an AI tutor.
 
