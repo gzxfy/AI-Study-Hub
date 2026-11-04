@@ -8,6 +8,12 @@ import RequestError from '../components/RequestError';
 import useResource from '../hooks/useResource';
 import { formatNoteDate } from '../notes/formatDate';
 
+function compactBrokenLines(content) {
+  // Some PDF exports put every word on its own line. Leave shorter runs alone.
+  return content.replace(/^[\t ]*\p{L}[\p{L}\p{M}'’-]*[\t ]*(?:\r?\n(?:[\t ]*\r?\n)*[\t ]*\p{L}[\p{L}\p{M}'’-]*[\t ]*){4,}[.!?,;:]?[\t ]*$/gmu,
+    (words) => words.trim().replace(/\s+/g, ' '));
+}
+
 export default function NotePage() {
   const { noteId } = useParams();
   const navigate = useNavigate();
@@ -40,7 +46,7 @@ export default function NotePage() {
             <span className="topic-tag topic-green">{note.topic?.title || 'No topic'}</span>
             <span>Updated {formatNoteDate(note.updated_at)}</span>
           </div>
-          <article className="panel saved-note" aria-label="Note content">{note.content}</article>
+          <article className="panel saved-note" aria-label="Note content">{compactBrokenLines(note.content)}</article>
           {deleting && (
             <DeleteDialog
               title="Delete this note?"

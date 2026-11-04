@@ -88,3 +88,4 @@
   .saved-note { padding: 24px; }
   .account-name { max-width: 130px; }
 }
+.pdf-preview { display: block; width: 100%; height: clamp(300px, 55vh, 620px); border: 1px solid var(--border); border-radius: var(--radius); margin-block: 8px; }
