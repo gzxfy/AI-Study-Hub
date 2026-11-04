@@ -8,6 +8,7 @@ export class ApiError extends Error {
 }
 
 export async function request(path, { body, method = 'GET', signal, headers } = {}) {
+  const multipart = body instanceof FormData;
   let response;
 
   try {
@@ -17,10 +18,10 @@ export async function request(path, { body, method = 'GET', signal, headers } = 
       credentials: 'same-origin',
       headers: {
         Accept: 'application/json',
-        ...(body !== undefined && { 'Content-Type': 'application/json' }),
+        ...(body !== undefined && !multipart && { 'Content-Type': 'application/json' }),
         ...headers,
       },
-      ...(body !== undefined && { body: JSON.stringify(body) }),
+      ...(body !== undefined && { body: multipart ? body : JSON.stringify(body) }),
     });
   } catch (error) {
     if (error.name === 'AbortError') throw error;

@@ -27,6 +27,15 @@ export async function createNote({ title, content, topic_id }) {
   return readNote(await mutate('/api/notes', { title, content, topic_id }));
 }
 
+export async function uploadNote({ title, content, topic_id }, file) {
+  const body = new FormData();
+  body.append('title', title);
+  body.append('content', content);
+  if (topic_id != null) body.append('topic_id', String(topic_id));
+  body.append('note_pdf', file);
+  return readNote(await mutate('/api/notes/upload', body));
+}
+
 export async function updateNote(id, { title, content, topic_id }) {
   return readNote(await mutate(`/api/notes/${encodeURIComponent(id)}`, { title, content, topic_id }, { method: 'PATCH' }));
 }

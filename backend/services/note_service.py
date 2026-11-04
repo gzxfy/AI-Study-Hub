@@ -49,6 +49,8 @@ def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
         uploaded_pdf_name = uploaded_pdf_path.filename
 
     final_content = extracted_text if extracted_text else content
+    if extracted_text and content.strip():
+        final_content = f"{content.strip()}\n\n--- PDF text ---\n\n{extracted_text}"
     validation_helpers.validate_note_data(title, final_content)
 
     new_note = Note(

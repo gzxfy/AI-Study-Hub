@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useBeforeUnload, useBlocker, useNavigate, useSearchParams } from 'react-router';
-import { createNote, updateNote, listTopics } from '../api/notes';
+import { createNote, updateNote, listTopics, uploadNote } from '../api/notes';
 import FormField from '../components/FormField';
 import Icon from '../components/Icon';
 import PageHeader from '../components/PageHeader';
@@ -15,12 +15,25 @@ export default function NoteEditor({ note = null }) {
   const topics = useResource(listTopics);
   const initial = { title: note?.title ?? '', content: note?.content ?? '', topicId: note ? (note.topic_id == null ? '' : String(note.topic_id)) : selectedTopic };
   const [draft, setDraft] = useState(initial);
+  const [pdf, setPdf] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [pdfError, setPdfError] = useState('');
+  const pdfInput = useRef(null);
   const [errors, setErrors] = useState({});
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const saved = useRef(false);
   const form = useRef(null);
-  const dirty = Object.keys(initial).some((key) => draft[key] !== initial[key]);
+  const dirty = Boolean(pdf) || Object.keys(initial).some((key) => draft[key] !== initial[key]);
+  useEffect(() => {
+    if (!pdf) {
+      setPreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(pdf);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pdf]);
   const wordCount = draft.content.trim() ? draft.content.trim().split(/\s+/).length : 0;
   const blocker = useBlocker(({ currentLocation, nextLocation }) => (
     dirty && !saved.current && currentLocation.pathname !== nextLocation.pathname
@@ -39,10 +52,25 @@ export default function NoteEditor({ note = null }) {
     setErrors((current) => ({ ...current, [name]: undefined }));
   }
 
+  function selectPdf(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== 'application/pdf')) {
+      setPdfError('Choose a PDF file.');
+      return;
+    }
+    setPdf(file);
+    setPdfError('');
+    setErrors((current) => ({ ...current, content: undefined }));
+  }
+
   async function handleSave(event) {
     event.preventDefault();
     if (saving) return;
+    setPdfError('');
     const validationErrors = validateNote(draft);
+    if (pdf && !draft.content.trim()) delete validationErrors.content;
     setErrors(validationErrors);
     setSaveError(null);
 
@@ -54,7 +82,11 @@ export default function NoteEditor({ note = null }) {
 
     setSaving(true);
     try {
-      const result = note ? await updateNote(note.id, notePayload(draft)) : await createNote(notePayload(draft));
+      const payload = notePayload(draft);
+      let result;
+      if (pdf) result = await uploadNote(payload, pdf);
+      else if (note) result = await updateNote(note.id, payload);
+      else result = await createNote(payload);
       // Only a confirmed server response can clear the unsaved-changes guard.
       saved.current = true;
       navigate(`/app/notes/${result.id}`, { replace: true, state: { created: !note, updated: Boolean(note) } });
@@ -88,7 +120,30 @@ export default function NoteEditor({ note = null }) {
             />
             <div className="editor-divider" />
             <div className="form-field content-field">
-              <label htmlFor="content">Content</label>
+              <div className="section-heading">
+                <label htmlFor="content">Content</label>
+                {!note && (
+                  <>
+                    <input ref={pdfInput} type="file" accept=".pdf,application/pdf" onChange={selectPdf} hidden />
+                    <button className="button button-secondary button-small" type="button" onClick={() => pdfInput.current.click()}>
+                      <Icon name="plus" size={15} /> Add PDF
+                    </button>
+                  </>
+                )}
+              </div>
+              {pdfError && <p className="field-error" role="alert">{pdfError}</p>}
+              {pdf && (
+                <div>
+                  <p className="field-hint" role="status">Selected PDF: {pdf.name}</p>
+                  <button className="text-button" type="button" onClick={() => { setPdf(null); setPdfError(''); }}>Remove PDF</button>
+                  {previewUrl && (
+                    <>
+                      <iframe className="pdf-preview" title={`PDF preview: ${pdf.name}`} src={previewUrl} />
+                      <a className="text-link" href={previewUrl} target="_blank" rel="noopener noreferrer">Open PDF in a new tab</a>
+                    </>
+                  )}
+                </div>
+              )}
               <textarea
                 id="content"
                 name="content"
@@ -98,7 +153,7 @@ export default function NoteEditor({ note = null }) {
                 maxLength={NOTE_LIMITS.content}
                 aria-invalid={errors.content ? true : undefined}
                 aria-describedby={errors.content ? 'content-error content-hint' : 'content-hint'}
-                required
+                required={!pdf}
               />
               {errors.content && <p id="content-error" className="field-error">{errors.content}</p>}
             </div>
