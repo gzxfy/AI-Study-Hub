@@ -20,6 +20,7 @@ async function loadOverview(signal) {
   return { notes, topics, flashcards, progress };
 }
 
+// Load an empty overview for non-authenticated users.
 function loadEmptyOverview() {
   return Promise.resolve(null);
 }

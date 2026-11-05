@@ -7,10 +7,12 @@ from backend.utils.validation_helpers import DuplicateAccountError
 
 auth_bp = Blueprint('auth', __name__)
 
+# Helper function to return standardized API error responses.
 def api_error(code, message, status):
     return jsonify({"error": {"code": code, "message": message}}), status
 
 
+# Helper function to extract and validate JSON payload from the request.
 def json_payload(required_fields):
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
@@ -21,7 +23,7 @@ def json_payload(required_fields):
 
     return data, None
 
-
+# CSRF token endpoint for the frontend to include in forms.
 @auth_bp.get('/api/auth/csrf')
 def get_csrf_token():
     response = jsonify({"csrf_token": generate_csrf()})
@@ -29,6 +31,7 @@ def get_csrf_token():
     return response
 
 
+# Registration endpoint for creating a new user account.
 @auth_bp.route('/api/auth/register', methods=['POST'])
 def register():
     data, error_response = json_payload(("username", "email", "password", "confirm_password"))
@@ -56,6 +59,7 @@ def register():
     }), 201
 
 
+# Login endpoint for authenticating a user and creating a session.
 @auth_bp.post('/api/auth/login')
 def login():
     data, error_response = json_payload(("email", "password"))
@@ -83,12 +87,14 @@ def login():
     }), 200
 
 
+# Logout endpoint for clearing the active user session.
 @auth_bp.post('/api/auth/logout')
 def logout():
     """Clear the active user session."""
     session.clear()
     return "", 204
 
+# Endpoint to retrieve the current authenticated user's information.
 @auth_bp.get('/api/auth/me')
 def get_current_user():
     user_id = session.get('user_id')

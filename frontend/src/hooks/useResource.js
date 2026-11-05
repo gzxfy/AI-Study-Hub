@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-
+// A custom hook to load the data and tracks whether the request is loading, successful, or failed
 export default function useResource(load) {
   const [result, setResult] = useState({ data: null, error: null, loading: true });
   const [attempt, setAttempt] = useState(0);

@@ -25,6 +25,7 @@ export default function NoteEditor({ note = null }) {
   const saved = useRef(false);
   const form = useRef(null);
   const dirty = Boolean(pdf) || Object.keys(initial).some((key) => draft[key] !== initial[key]);
+  
   useEffect(() => {
     if (!pdf) {
       setPreviewUrl('');

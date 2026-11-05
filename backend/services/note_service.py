@@ -42,12 +42,14 @@ def create_note(user_id, title, content, topic_id, uploaded_pdf_path=None):
     extracted_text = ""
     uploaded_pdf_name = None
 
+    # Extract text from the uploaded PDF if provided.
     if uploaded_pdf_path and getattr(uploaded_pdf_path, "filename", ""):
         extracted_text, _ = pdf_service.extract_text_from_pdf(uploaded_pdf_path)
         if not extracted_text.strip():
             raise ValueError("The uploaded PDF file is empty or could not be read.")
         uploaded_pdf_name = uploaded_pdf_path.filename
 
+    # Combine the extracted PDF text with the user-provided content.
     final_content = extracted_text if extracted_text else content
     if extracted_text and content.strip():
         final_content = f"{content.strip()}\n\n--- PDF text ---\n\n{extracted_text}"
