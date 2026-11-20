@@ -148,6 +148,24 @@ export OPENAI_API_KEY='your-real-openai-api-key'
 
 Replace the example value with your own key. OpenAI requests can incur usage charges. The key stays on the backend; never put it in React or commit it. Local mode does not read a key from `.env`.
 
+### Run the app with Docker Compose
+
+With Docker Desktop running, open PowerShell at the repository root:
+
+```powershell
+docker compose -f .\docker\compose.yaml up -d --build
+```
+
+Open [AI Study Hub](http://localhost:5173). If a local Vite server is already using port 5173, stop it before starting Compose. The first build downloads the base images and installs the Python and Node dependencies. Compose starts PostgreSQL, waits for its health check, and starts Flask after the database migrations succeed. Vite forwards browser API requests to Flask.
+
+```powershell
+docker compose -f .\docker\compose.yaml ps
+docker compose -f .\docker\compose.yaml logs db backend frontend
+docker compose -f .\docker\compose.yaml stop frontend backend db
+```
+
+These are local development servers. PostgreSQL saves its data in the existing named volume. Use `OPENAI_API_KEY` in your launching environment or root `.env` to enable real AI replies. Set `SECRET_KEY` to a long random value if you want login sessions to survive backend restarts.
+
 ### Optional: use your own MySQL database
 
 Use the standard Flask entry point instead of `run_local.py` when you want your own database configuration. It reads `.env` or environment variables. You must create the database and use an existing MySQL account with access to it; the local launcher does not create MySQL users or databases.

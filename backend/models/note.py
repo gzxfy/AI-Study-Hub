@@ -13,6 +13,7 @@ class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
+    
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     uploaded_pdf_path = db.Column(db.String(500), nullable=True)

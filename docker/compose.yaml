@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: studyhub
+      POSTGRES_PASSWORD: studyhub_dev
+      POSTGRES_DB: studyhub_db
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - studyhub_postgres18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "studyhub", "-d", "studyhub_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://studyhub:studyhub_dev@db:5432/studyhub_db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SECRET_KEY: ${SECRET_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    environment:
+      VITE_BACKEND_URL: http://backend:5000
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:5173:5173"
+
+volumes:
+  studyhub_postgres18:

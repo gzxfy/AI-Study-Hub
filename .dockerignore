@@ -1,0 +1,17 @@
+**
+!requirements.txt
+!run.py
+!backend/
+!backend/**
+!alembic/
+!alembic/**
+!static/
+!static/**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/vite.config.js
+!frontend/src/
+!frontend/src/**
+**/__pycache__/
