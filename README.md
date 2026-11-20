@@ -63,7 +63,9 @@ cd AI-Study-Hub
 docker compose -f docker/compose.yaml up -d --build
 ```
 
-Open [AI Study Hub](http://localhost:5173), register an account, and create a topic and note. Compose starts PostgreSQL and waits for its health check. The backend then applies Alembic migrations before starting Flask, and Vite forwards browser API requests to Flask.
+Once the command finishes, open your web browser and go to [http://localhost:5173/app](http://localhost:5173/app). Register an account, sign in, and create a topic and note. The first build may take a few minutes. Docker runs the app in the background, so the terminal prompt returns and you can open the browser yourself.
+
+Compose starts PostgreSQL and waits for its health check. The backend then applies Alembic migrations before starting Flask, and Vite forwards browser API requests to Flask.
 
 Run these commands from the repository root:
 
