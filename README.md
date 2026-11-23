@@ -160,5 +160,8 @@ run_local.py    Migrate and start an isolated local SQLite workspace
 - Expand browser testing across the main workflows and mobile layouts.
 - Improve AI availability errors, usage limits, and handling of concurrent requests.
 - Continue backend cleanup after verifying the connected frontend workflows.
+- Switch the authenication system instead of using session based cookies
+- implement more test to test postgreSQL
+- API security
 
 
