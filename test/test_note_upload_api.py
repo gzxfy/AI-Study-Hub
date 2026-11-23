@@ -20,7 +20,7 @@ def create_signed_in_user(client, test_app):
         session["user_id"] = user_id
     return user_id
 
-
+# current fails
 def test_pdf_upload_creates_note_from_extracted_text(
     client, test_app, monkeypatch
 ):

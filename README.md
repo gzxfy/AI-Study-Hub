@@ -101,6 +101,20 @@ A stable `SECRET_KEY` keeps login sessions valid across backend restarts. Keep t
 
 ## Tests
 
+PostgreSQL tests are opt-in. Set `TEST_DATABASE_URL` to a connection for the local `studyhub_test` database using a role with permission to create databases. The fixture creates and removes a new database per test.
+
+Run the browser test against a disposable local app instance. It registers a student and saves a note.
+
+```powershell
+cd frontend
+npm ci
+npx playwright install chromium
+$env:STUDYHUB_E2E_URL = 'http://localhost:5173'
+npm run test:e2e
+```
+
+Set the URL to match your test instance.
+
 Run the backend suite from the repository root with the Python virtual environment active:
 
 ```bash

@@ -37,6 +37,17 @@ def post(client, path, payload):
     return client.post(path, json=payload, headers={"X-CSRFToken": token})
 
 
+def test_empty_postgres_database_upgrades_to_head(empty_postgres_app):
+    with empty_postgres_app.app_context():
+        assert sa.inspect(db.engine).get_table_names() == []
+
+    upgrade(empty_postgres_app)
+
+    with empty_postgres_app.app_context():
+        assert "notes" in sa.inspect(db.engine).get_table_names()
+        assert db.session.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one() == HEAD
+
+
 def test_empty_database_upgrade_matches_model_columns(migrated_app):
     upgrade(migrated_app)
     with migrated_app.app_context():
