@@ -9,7 +9,7 @@ from backend.models.models import FlashcardProgress, StudyPlan
 from backend.services import assistant_service
 
 
-HEAD = "d8a17c09e452"
+HEAD = "bc4994342a64"
 
 
 @pytest.fixture
@@ -45,7 +45,39 @@ def test_empty_postgres_database_upgrades_to_head(empty_postgres_app):
 
     with empty_postgres_app.app_context():
         assert "notes" in sa.inspect(db.engine).get_table_names()
+        checks = sa.inspect(db.engine).get_check_constraints("quiz_question_attempts")
+        assert "ck_quiz_question_attempt_exactly_one_source" in {check["name"] for check in checks}
         assert db.session.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one() == HEAD
+
+
+def test_postgres_upgrade_preserves_existing_flashcard_quiz(empty_postgres_app):
+    upgrade(empty_postgres_app, "d8a17c09e452")
+    with empty_postgres_app.app_context():
+        db.session.execute(sa.text("""INSERT INTO "user" (id, username, email, password_hash)
+            VALUES (1, 'student', 'student@example.com', 'test-only')"""))
+        db.session.execute(sa.text("""INSERT INTO notes (id, user_id, title, content)
+            VALUES (1, 1, 'Notes', 'Study material')"""))
+        db.session.execute(sa.text("""INSERT INTO flashcards (id, user_id, note_id, question, answer)
+            VALUES (1, 1, 1, 'Question', 'Answer')"""))
+        db.session.execute(sa.text("""INSERT INTO quiz_attempts (id, user_id, note_id, score)
+            VALUES (1, 1, 1, 100)"""))
+        db.session.execute(sa.text("""INSERT INTO quiz_question_attempts
+            (quiz_attempt_id, flashcard_id, user_answer, correct_answer)
+            VALUES (1, 1, 'Answer', 'Answer')"""))
+        db.session.commit()
+
+    upgrade(empty_postgres_app)
+
+    with empty_postgres_app.app_context():
+        attempt = db.session.execute(sa.text("SELECT user_id, note_id, quiz_id, score FROM quiz_attempts")).one()
+        answer = db.session.execute(sa.text(
+            "SELECT quiz_attempt_id, flashcard_id, quiz_question_id FROM quiz_question_attempts"
+        )).one()
+        assert tuple(attempt) == (1, 1, None, 100)
+        assert tuple(answer) == (1, 1, None)
+        with pytest.raises(sa.exc.IntegrityError, match="ck_quiz_question_attempt_exactly_one_source"):
+            db.session.execute(sa.text("UPDATE quiz_question_attempts SET flashcard_id = NULL"))
+        db.session.rollback()
 
 
 def test_empty_database_upgrade_matches_model_columns(migrated_app):

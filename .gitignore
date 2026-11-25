@@ -13,3 +13,4 @@ alembic/*
 !alembic/versions/
 alembic/versions/*
 !alembic/versions/c912d45b810e_add_assistant_message_request_ids.py
+!alembic/versions/bc4994342a64_add_reusable_quizzes.py

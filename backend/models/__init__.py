@@ -8,6 +8,8 @@ from .note import Note
 from .progress import Progress
 from .quiz_attempt import QuizAttempt
 from .quiz_question_attempt import QuizQuestionAttempt
+from .quiz import Quiz
+from .quiz_question import QuizQuestion
 from .study_event import StudyEvent
 from .study_plan import StudyPlan
 from .study_plan_day import StudyPlanDay
@@ -24,6 +26,8 @@ __all__ = [
     "Progress",
     "QuizAttempt",
     "QuizQuestionAttempt",
+    "Quiz",
+    "QuizQuestion",
     "StudyEvent",
     "StudyPlan",
     "StudyPlanDay",

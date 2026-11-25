@@ -13,7 +13,9 @@ class QuizAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=True)
-    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+
     score = db.Column(db.Float, default=0)
     status = db.Column(db.String(20), default='in_progress')
     question_index = db.Column(db.Integer, default=0)
