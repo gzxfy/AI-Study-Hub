@@ -66,6 +66,12 @@ def test_saved_quiz_persists_score_and_enforces_attempt_rules(request, app_fixtu
     assert second_attempt.status_code == 201
     second_path = f"/api/quiz-attempts/{second_attempt.json['quiz_attempt_id']}/answers"
     assert client.post(second_path, json=first_answer).status_code == 200
-    assert client.post(second_path, json=second_answer).json["status"] == "completed"
+    assert client.post(second_path, json={"question_id": second_id, "answer": "6"}).json["status"] == "completed"
     assert client.post(start_path).status_code == 409
+    stats = client.get("/api/quizzes").json["quizzes"][0]
+    assert (stats["last_score"], stats["average_score"]) == (100, 75)
+    assert (stats["attempt_count"], stats["attempt_limit"], stats["can_resume"]) == (2, 2, False)
+    other_stats = other_client.get("/api/quizzes").json["quizzes"][0]
+    assert other_stats["attempt_count"] == 0
+    assert other_stats["last_score"] is None
     assert other_client.post(start_path).status_code == 201

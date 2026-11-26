@@ -1,5 +1,6 @@
 """Manage attempts for quizzes whose questions are stored in quiz_questions."""
 
+from collections import defaultdict
 from datetime import datetime, timezone
 
 from sqlalchemy import or_
@@ -24,10 +25,36 @@ def list_saved_quizzes(user_id):
     """Return active shared quizzes and quizzes owned by this student."""
     quizzes = Quiz.query.filter(
         Quiz.is_active.is_(True), or_(Quiz.user_id.is_(None), Quiz.user_id == user_id)
-    ).order_by(Quiz.title, Quiz.id)
-    return [{"id": quiz.id, "title": quiz.title, "description": quiz.description} for quiz in quizzes]
+    ).order_by(Quiz.title, Quiz.id).all()
+    if not quizzes:
+        return []
 
+    # History belongs to the student. Read it in one query for all visible quizzes.
+    attempts_by_quiz = defaultdict(list)
+    attempts = QuizAttempt.query.filter(
+        QuizAttempt.user_id == user_id,
+        QuizAttempt.quiz_id.in_([quiz.id for quiz in quizzes]),
+    ).order_by(QuizAttempt.finished_at.desc().nulls_last(), QuizAttempt.id.desc())
+    for attempt in attempts:
+        attempts_by_quiz[attempt.quiz_id].append(attempt)
 
+    result = []
+    for quiz in quizzes:
+        history = attempts_by_quiz[quiz.id]
+        scores = [attempt.score for attempt in history if attempt.status == "completed" and attempt.score is not None]
+        result.append({
+            "id": quiz.id,
+            "title": quiz.title,
+            "description": quiz.description,
+            "attempt_count": len(history),
+            "attempt_limit": MAX_ATTEMPTS,
+            "can_resume": any(attempt.status == "in_progress" for attempt in history),
+            "last_score": scores[0] if scores else None,
+            "average_score": round(sum(scores) / len(scores), 2) if scores else None,
+        })
+    return result
+
+# write lock for SQLite to prevent concurrent modifications
 def _lock_writes():
     # SQLite ignores row locks. Reserve its write transaction before reading state.
     if db.engine.dialect.name == "sqlite":

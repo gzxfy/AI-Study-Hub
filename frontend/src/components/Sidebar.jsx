@@ -8,6 +8,7 @@ const links = [
   { to: '/app/topics', label: 'Topics', icon: 'topics' },
   { to: '/app/flashcards', label: 'Flashcards', icon: 'flashcards' },
   { to: '/app/study', label: 'Study sessions', icon: 'study' },
+  { to: '/app/quizzes', label: 'Quizzes', icon: 'study' },
   { to: '/app/assistant', label: 'AI Assistant', icon: 'assistant' },
 ];
 

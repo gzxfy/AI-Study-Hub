@@ -6,6 +6,7 @@ import AuthPage from './pages/AuthPage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import FlashcardEditorPage from './pages/FlashcardEditorPage';
 import FlashcardStudyPage from './pages/FlashcardStudyPage';
+import QuizzesPage from './pages/QuizzesPage';
 import NotFoundPage from './pages/NotFoundPage';
 import NotesPage from './pages/NotesPage';
 import CreateNotePage from './pages/CreateNotePage';
@@ -28,6 +29,7 @@ const router = createBrowserRouter(createRoutesFromElements(
           <Route path="app/flashcards/new" element={<FlashcardEditorPage />} />
           <Route path="app/flashcards/:cardId/edit" element={<FlashcardEditorPage />} />
           <Route path="app/study" element={<FlashcardStudyPage />} />
+          <Route path="app/quizzes" element={<QuizzesPage />} />
           <Route path="app/assistant" element={<AssistantPage />} />
           <Route path="app/notes" element={<NotesPage />} />
           <Route path="app/notes/new" element={<CreateNotePage />} />
