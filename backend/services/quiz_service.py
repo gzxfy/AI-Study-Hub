@@ -18,7 +18,8 @@ def compute_score_percentage(correct_count, total_count):
 # This function will most likely be moved to a repository folder in the future, but for now, it's here to keep things simple.
 def get_quiz_attempt_for_user(quiz_attempt_id, user_id):
     """Fetch a quiz attempt only when it belongs to the requesting user."""
-    quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id).first()
+    # Flashcard routes interpret question_order as flashcard IDs.
+    quiz_attempt = QuizAttempt.query.filter_by(id=quiz_attempt_id, user_id=user_id, quiz_id=None).first()
     if not quiz_attempt:
         raise ValueError("Quiz attempt not found.")
     return quiz_attempt

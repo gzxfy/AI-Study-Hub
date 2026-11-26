@@ -1,9 +1,79 @@
 from flask import Blueprint, jsonify, request, session
 import backend.utils.validation_helpers as validation_helpers
-from backend.services import quiz_service
-from backend import csrf
+from backend.services import quiz_service, saved_quiz_service
+from backend import csrf, db
+from backend.models import User
 
 quiz_mode_bp = Blueprint('quiz_mode', __name__)
+
+# Helper functions for saved quiz responses and authentication
+def saved_quiz_json(data, status=200):
+    response = jsonify(data)
+    response.headers["Cache-Control"] = "no-store"
+    return response, status
+
+
+def saved_quiz_error(code, message, status):
+    return saved_quiz_json({"error": {"code": code, "message": message}}, status)
+
+
+def saved_quiz_user_id():
+    user_id = session.get("user_id")
+    if type(user_id) is int and user_id > 0 and db.session.get(User, user_id) is not None:
+        return user_id
+    session.clear()
+    return None
+
+
+@quiz_mode_bp.get("/api/quizzes")
+def list_saved_quizzes():
+    """List saved quizzes visible to the signed-in student."""
+    user_id = saved_quiz_user_id()
+    if user_id is None:
+        return saved_quiz_error("unauthenticated", "Not authenticated.", 401)
+    return saved_quiz_json({"quizzes": saved_quiz_service.list_saved_quizzes(user_id)})
+
+
+@quiz_mode_bp.post("/api/quizzes/<int:quiz_id>/attempts")
+def start_saved_quiz(quiz_id):
+    """Start or resume a saved quiz and return its current question."""
+    user_id = saved_quiz_user_id()
+    if user_id is None:
+        return saved_quiz_error("unauthenticated", "Not authenticated.", 401)
+    try:
+        state, created = saved_quiz_service.start_saved_quiz(user_id, quiz_id)
+    except saved_quiz_service.QuizNotFoundError as error:
+        db.session.rollback()
+        return saved_quiz_error("not_found", str(error), 404)
+    except saved_quiz_service.QuizConflictError as error:
+        db.session.rollback()
+        return saved_quiz_error("quiz_conflict", str(error), 409)
+    return saved_quiz_json(state, 201 if created else 200)
+
+
+@quiz_mode_bp.post("/api/quiz-attempts/<int:attempt_id>/answers")
+def submit_saved_quiz_answer(attempt_id):
+    """Accept an answer and return the next question or final score."""
+    user_id = saved_quiz_user_id()
+    if user_id is None:
+        return saved_quiz_error("unauthenticated", "Not authenticated.", 401)
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return saved_quiz_error("invalid_json", "Expected a JSON object.", 400)
+    question_id = data.get("question_id")
+    answer = data.get("answer")
+    if type(question_id) is not int or question_id <= 0 or not isinstance(answer, str) or not answer.strip():
+        return saved_quiz_error("invalid_fields", "A question ID and a non-empty answer are required.", 400)
+    try:
+        state = saved_quiz_service.submit_saved_quiz_answer(user_id, attempt_id, question_id, answer)
+    except saved_quiz_service.QuizNotFoundError as error:
+        db.session.rollback()
+        return saved_quiz_error("not_found", str(error), 404)
+    except saved_quiz_service.QuizConflictError as error:
+        db.session.rollback()
+        return saved_quiz_error("quiz_conflict", str(error), 409)
+    return saved_quiz_json(state)
+
 
 def require_int(value, name):
     """Parse a required quiz identifier and reject invalid integer input."""
